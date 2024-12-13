@@ -16,7 +16,5 @@ COPY . .
 # Build the Go application
 RUN go build -o data-consumer main.go
 
-# Expose port (optional, depending on your use case)
-#EXPOSE 29092
 # Run the Go application
 CMD ["./data-consumer"]
