@@ -41,6 +41,12 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
    - **Concurrency**: A worker pool is used to process multiple messages concurrently, improving throughput and scalability.
    - **Graceful Shutdown**: The consumer listens for termination signals (e.g., SIGTERM) and shuts down Kafka connections cleanly, ensuring no data is lost.
 
+
+## Architecture Diagram
+
+![Real-time Streaming Data Pipeline Architecture](./images/architecture_diagram.png)
+
+
 ## Running the Project Locally
 
 ### Prerequisites
