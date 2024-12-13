@@ -1,3 +1,6 @@
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 # Real-Time Data Streaming Pipeline with Kafka, Docker, and Go
 
 This project implements a real-time data streaming pipeline using **Apache Kafka**, **Docker**, and **Go**. It involves creating a system to consume, process, and produce data messages in Kafka topics, while ensuring scalability, fault tolerance, and efficient message handling. The pipeline consists of the following components:
