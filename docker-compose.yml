@@ -1,0 +1,71 @@
+services:
+  zookeeper:
+    container_name: ${PROJECT_NAME}-zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    env_file:
+      - .env
+    ports:
+      - 32181:32181
+      - 2181:2181
+    networks:
+      - kafka-network
+    volumes:
+      - zoo_data:/data
+      - zoo_datalog:/datalog
+    deploy:
+      replicas: 1
+
+  kafka:
+    container_name: ${PROJECT_NAME}-kafka
+    env_file:
+      - .env
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29092:29092
+      - 9092:9092
+    networks:
+      - kafka-network
+    deploy:
+      replicas: 1
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+
+  my-python-producer:
+    container_name: ${PROJECT_NAME}-producer
+    image: mpradeep954/fetch-de-data-gen
+    depends_on:
+      - kafka
+    restart: on-failure:10
+    ports:
+      - 9093:9093
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: user-login
+    networks:
+      - kafka-network
+
+  data-consumer:
+    container_name: ${PROJECT_NAME}-consumer
+    env_file:
+      - .env
+    build:
+      context: ./data-consumer
+    depends_on:
+      - kafka
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge
+
+volumes:
+  kafka_data:
+  zoo_data:
+  zoo_datalog:
