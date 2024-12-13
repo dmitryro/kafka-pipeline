@@ -186,7 +186,7 @@ IAM roles for MSK are managed through AWS Identity and Access Management (IAM), 
         }
     ]
 }
-
+```json
 
 #### Confluent Cloud IAM Roles
 
