@@ -152,73 +152,6 @@ DLQ_TOPIC=user-login-dlq
    - **Audit logging** for all Kafka interactions can help with security and compliance, especially in regulated industries.
    - **TLS encryption** :Ensure secure communication with Kafka brokers by enabling **SSL/TLS** encryption for both producers and consumers.
    - Use **IAM roles** for secure access to cloud services like S3 or MSK, ensuring least privilege access.
-   #### **IAM Roles for Kafka**
-
-   Cloud-based Kafka services like Amazon MSK (Managed Streaming for Apache Kafka) and Confluent Cloud rely on Identity and Access Management (IAM) roles for securing access to Kafka resources. IAM roles are used to authenticate and authorize clients, services, and applications interacting with Kafka clusters.
-
-   ##### **Amazon MSK IAM Roles**
-
-   In MSK, IAM roles are used to control access to your Kafka brokers and Kafka data within AWS. You can use IAM roles to:
-
-   - **Grant permissions to clients:** Through the use of IAM policies, you can control which users, roles, or services can produce, consume, or administer Kafka topics.
-   - **Authenticate clients:** MSK supports **IAM authentication** for producers and consumers to securely connect to Kafka brokers. IAM roles can be assigned to EC2 instances or services like AWS Lambda to authenticate without using traditional usernames and passwords.
-   - **Access Control:** Policies can be attached to IAM roles, controlling access based on Kafka resources like topics and consumer groups.
-
-   IAM roles for MSK are managed through AWS Identity and Access Management (IAM), and the appropriate permissions must be granted to allow the Kafka client applications to interact with MSK clusters.
-
-   ##### Example: IAM Policy for MSK Consumer
-
-   ```json
-   {
-       "Version": "2012-10-17",
-       "Statement": [
-           {
-               "Effect": "Allow",
-               "Action": [
-                   "kafka:DescribeCluster",
-                   "kafka:DescribeTopic",
-                   "kafka:ListTopics",
-                   "kafka:GetRecords",
-                   "kafka:Consume"
-               ],
-               "Resource": "arn:aws:kafka:region:account-id:cluster/cluster-name/*"
-           }
-       ]
-   }
-   ```
-
-   #### Confluent Cloud IAM Roles
-
-   Confluent Cloud provides a robust IAM (Identity and Access Management) system to control access to Kafka resources. It integrates with cloud-native IAM systems like AWS IAM, Google Cloud IAM, and Azure AD to enable seamless and secure access control. With Confluent Cloud, you can define fine-grained permissions for managing Kafka clusters, topics, consumer groups, and other resources.
-
-   ##### **Key IAM Roles in Confluent Cloud**
-
-   - **Administrator**: Full access to all resources and configurations within the Confluent Cloud environment. This role can manage Kafka clusters, create and delete topics, and manage IAM policies.
-     
-   - **Kafka Cluster Admin**: Can create and manage Kafka clusters, configure brokers, and manage topic configurations. However, they do not have access to non-Kafka services like connectors, schemas, or user management.
-     
-   - **Developer**: Can produce and consume messages to/from Kafka topics and create topics, but has limited access to administrative functionalities. Developers typically focus on managing their specific applications.
-     
-   - **Viewer**: Can only view the configuration of Kafka resources, including topic details, consumer groups, and cluster configurations. This role does not allow any changes or access to message data.
-     
-   - **Schema Registry Admin**: Can manage schemas within the Schema Registry but does not have access to Kafka cluster or other non-schema resources.
-
-   ##### **Assigning IAM Roles in Confluent Cloud**
-
-   IAM roles are assigned at different levels, including:
-
-   - **Organization level**: Users can be assigned roles that give access to all resources within the Confluent Cloud organization.
-   - **Cluster level**: Roles can be restricted to a specific Kafka cluster or specific topics within that cluster.
-   - **Topic level**: Fine-grained access can be applied, such as allowing a user to only produce messages to a specific topic.
-
-   Roles are assigned through the Confluent Cloud UI or via the API by the administrator.
-
-   ##### **Best Practices for IAM Role Management in Confluent Cloud**
-
-   - **Principle of Least Privilege**: Always assign the least amount of privilege necessary to perform the required tasks. For example, a developer should not be granted administrator permissions unless absolutely necessary.
-   - **Use Role-based Access Control (RBAC)**: RBAC allows administrators to define roles with specific permissions for different users or services within the organization.
-   - **Monitor Role Assignments**: Regularly review and audit IAM roles to ensure that only authorized users and services have access to sensitive Kafka resources.
-   - **Use Multi-Factor Authentication (MFA)**: Enhance security by enabling MFA for users with elevated IAM roles, such as administrators.
 
 ### 7. **Fault Tolerance and High Availability**
    - Ensure that **Kafka brokers** are deployed in a fault-tolerant configuration with replication across multiple availability zones to avoid data loss in case of broker failure.
@@ -240,6 +173,75 @@ DLQ_TOPIC=user-login-dlq
    - Implement comprehensive error handling to gracefully handle failures in Kafka message processing.
    - Set up alerts using tools like **Prometheus Alertmanager** or **Datadog** to monitor for issues like consumer lag, application crashes, and resource utilization.
 
+
+## Security and Compliance
+#### **IAM Roles for Kafka**
+
+Cloud-based Kafka services like Amazon MSK (Managed Streaming for Apache Kafka) and Confluent Cloud rely on Identity and Access Management (IAM) roles for securing access to Kafka resources. IAM roles are used to authenticate and authorize clients, services, and applications interacting with Kafka clusters.
+
+##### **Amazon MSK IAM Roles**
+
+In MSK, IAM roles are used to control access to your Kafka brokers and Kafka data within AWS. You can use IAM roles to:
+
+- **Grant permissions to clients:** Through the use of IAM policies, you can control which users, roles, or services can produce, consume, or administer Kafka topics.
+- **Authenticate clients:** MSK supports **IAM authentication** for producers and consumers to securely connect to Kafka brokers. IAM roles can be assigned to EC2 instances or services like AWS Lambda to authenticate without using traditional usernames and passwords.
+- **Access Control:** Policies can be attached to IAM roles, controlling access based on Kafka resources like topics and consumer groups.
+
+IAM roles for MSK are managed through AWS Identity and Access Management (IAM), and the appropriate permissions must be granted to allow the Kafka client applications to interact with MSK clusters.
+
+##### Example: IAM Policy for MSK Consumer
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "kafka:DescribeCluster",
+                "kafka:DescribeTopic",
+                "kafka:ListTopics",
+                "kafka:GetRecords",
+                "kafka:Consume"
+            ],
+            "Resource": "arn:aws:kafka:region:account-id:cluster/cluster-name/*"
+        }
+    ]
+}
+```
+
+#### Confluent Cloud IAM Roles
+
+Confluent Cloud provides a robust IAM (Identity and Access Management) system to control access to Kafka resources. It integrates with cloud-native IAM systems like AWS IAM, Google Cloud IAM, and Azure AD to enable seamless and secure access control. With Confluent Cloud, you can define fine-grained permissions for managing Kafka clusters, topics, consumer groups, and other resources.
+
+##### **Key IAM Roles in Confluent Cloud**
+
+- **Administrator**: Full access to all resources and configurations within the Confluent Cloud environment. This role can manage Kafka clusters, create and delete topics, and manage IAM policies.
+  
+- **Kafka Cluster Admin**: Can create and manage Kafka clusters, configure brokers, and manage topic configurations. However, they do not have access to non-Kafka services like connectors, schemas, or user management.
+  
+- **Developer**: Can produce and consume messages to/from Kafka topics and create topics, but has limited access to administrative functionalities. Developers typically focus on managing their specific applications.
+  
+- **Viewer**: Can only view the configuration of Kafka resources, including topic details, consumer groups, and cluster configurations. This role does not allow any changes or access to message data.
+  
+- **Schema Registry Admin**: Can manage schemas within the Schema Registry but does not have access to Kafka cluster or other non-schema resources.
+
+##### **Assigning IAM Roles in Confluent Cloud**
+
+IAM roles are assigned at different levels, including:
+
+- **Organization level**: Users can be assigned roles that give access to all resources within the Confluent Cloud organization.
+- **Cluster level**: Roles can be restricted to a specific Kafka cluster or specific topics within that cluster.
+- **Topic level**: Fine-grained access can be applied, such as allowing a user to only produce messages to a specific topic.
+
+Roles are assigned through the Confluent Cloud UI or via the API by the administrator.
+
+##### **Best Practices for IAM Role Management in Confluent Cloud**
+
+- **Principle of Least Privilege**: Always assign the least amount of privilege necessary to perform the required tasks. For example, a developer should not be granted administrator permissions unless absolutely necessary.
+- **Use Role-based Access Control (RBAC)**: RBAC allows administrators to define roles with specific permissions for different users or services within the organization.
+- **Monitor Role Assignments**: Regularly review and audit IAM roles to ensure that only authorized users and services have access to sensitive Kafka resources.
+- **Use Multi-Factor Authentication (MFA)**: Enhance security by enabling MFA for users with elevated IAM roles, such as administrators.
 
 ## Scalability
 
