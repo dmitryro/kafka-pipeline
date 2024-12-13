@@ -212,11 +212,11 @@ To ensure the application is production-ready, consider adding the following com
 
 To deploy this application in production, follow these steps:
 
-### 1. **Containerization:**
+   1. **Containerization:**
    - Use Docker to package the application with all dependencies.
    - Create separate Dockerfiles for development and production environments to optimize builds.
 
-### 2. **Orchestration:**
+   2. **Orchestration:**
    - Use Kubernetes to manage containers at scale.
    - Define the following Kubernetes resources:
      - **Deployment:** For Kafka consumer and producer services with rolling updates.
@@ -225,22 +225,22 @@ To deploy this application in production, follow these steps:
      - **Services:** For internal communication between components.
      - **Ingress:** To expose application endpoints securely (if needed).
 
-### 3. **Infrastructure:**
+   3. **Infrastructure:**
    - Choose a reliable cloud provider (e.g., AWS, GCP, Azure).
    - Use managed Kafka services like Confluent Cloud or AWS MSK to reduce operational overhead.
    - Ensure a robust load balancer (e.g., Kubernetes Ingress or AWS ALB) for high availability.
 
-### 4. **Monitoring and Logging:**
+   4. **Monitoring and Logging:**
    - Integrate **Prometheus** for metrics collection and **Grafana** for visualization.
    - Set up centralized logging with the **ELK Stack** (Elasticsearch, Logstash, Kibana).
    - Implement alerting tools like **PagerDuty** or **Opsgenie** for incident management.
 
-### 5. **Security:**
+   5. **Security:**
    - Enable Kafka encryption (SSL/TLS) and authentication (SASL).
    - Use network policies in Kubernetes to restrict pod communication.
    - Regularly audit Kafka ACLs to ensure least privilege access.
 
-### 6. **Disaster Recovery:**
+   6. **Disaster Recovery:**
    - Enable multi-zone replication for Kafka brokers.
    - Automate backups for Kafka data and configuration files.
    - Perform periodic recovery drills to validate backup integrity.
@@ -340,23 +340,23 @@ As the dataset grows, the application should be designed to scale efficiently. H
 
 As the dataset grows, this application can scale effectively with the following strategies:
 
-### 1. **Kafka Partitioning:**
+   1. **Kafka Partitioning:**
    - Increase the number of partitions in Kafka topics to allow parallel processing.
    - Use a key-based partition strategy to ensure data consistency and load balancing.
 
-### 2. **Consumer Scaling:**
+   2. **Consumer Scaling:**
    - Add more consumers in the same consumer group to scale horizontally.
    - Monitor consumer lag using tools like **Kafka Lag Exporter** to identify bottlenecks.
 
-### 3. **Optimizing Kafka Configuration:**
+   3. **Optimizing Kafka Configuration:**
    - Tune Kafka settings like `retention.ms` and `segment.bytes` to handle large datasets efficiently.
    - Configure `min.insync.replicas` to ensure data durability while maintaining performance.
 
-### 4. **Resource Scaling:**
+   4. **Resource Scaling:**
    - Use Kubernetes **Horizontal Pod Autoscaler** to add or remove pods based on CPU/memory utilization.
    - Scale Kafka brokers vertically (adding more resources) or horizontally (adding more brokers).
 
-### 5. **Enhanced Processing:**
+   5. **Enhanced Processing:**
    - Use frameworks like **Kafka Streams** or **Apache Flink** for stateful processing.
    - Consider data batch processing for non-real-time use cases with tools like **Apache Spark**.
 
