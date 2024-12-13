@@ -246,6 +246,33 @@ To deploy this application in production, follow these steps:
    - Perform periodic recovery drills to validate backup integrity.
 
 
+## Deployment Commands
+
+   1. **Build Docker Images:**
+   ```bash
+   docker build -t kafka-consumer:latest ./consumer
+   docker build -t kafka-producer:latest ./producer
+   ```
+
+   2. **Run Locally with Docker Compose:**
+   ```bash
+   docker-compose up
+   ```
+
+   3. **Deploy to Kubernetes:**
+   ```bash
+   kubectl apply -f k8s/deployment.yaml
+   kubectl apply -f k8s/service.yaml
+   kubectl apply -f k8s/configmap.yaml
+   kubectl apply -f k8s/secret.yaml
+   ```
+
+   4. **Monitor Deployment:**
+   ```bash
+   kubectl get pods
+   kubectl logs -f <pod-name>
+   ```
+
 ## Security and Compliance
 #### **IAM Roles for Kafka**
 
