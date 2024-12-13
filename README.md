@@ -185,7 +185,7 @@ IAM roles for MSK are managed through AWS Identity and Access Management (IAM), 
             "Resource": "arn:aws:kafka:region:account-id:cluster/cluster-name/*"
         }
     ]
-}```
+}
 
 
 #### Confluent Cloud IAM Roles
