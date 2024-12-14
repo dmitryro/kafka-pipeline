@@ -45,9 +45,145 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
    - **Graceful Shutdown**: The consumer listens for termination signals (e.g., SIGTERM) and shuts down Kafka connections cleanly, ensuring no data is lost.
 
 
+## Consumer Documentation
+
+### Overview
+
+The consumer component is designed to consume messages from a Kafka topic, validate and process those messages, and forward valid messages to another Kafka topic. It also handles invalid messages by placing them in a Dead Letter Queue (DLQ). This consumer is built to be highly robust, with error handling, retries, graceful shutdown, and filtering features.
+
+### Features
+
+#### 1. **Message Validation and Filtering**
+   - **Purpose**: Ensures that each message contains required fields and adheres to a predefined schema.
+   - **Fields Checked**: 
+     - `UserID`: The identifier for the user.
+     - `AppVersion`: The version of the app generating the event.
+     - `DeviceType`: The type of device the user is using (e.g., mobile, desktop).
+   - **Action**: 
+     - Valid messages are forwarded to the `processed-user-login` Kafka topic.
+     - Invalid messages are placed into a Dead Letter Queue (DLQ) (`user-login-dlq`) for further inspection.
+
+#### 2. **Error Handling and Retry Logic**
+   - **Purpose**: Ensures that transient errors do not cause message loss.
+   - **How It Works**: 
+     - The consumer retries message processing up to a defined number of times if temporary errors occur (e.g., Kafka unavailability or validation issues).
+     - If all retry attempts are exhausted, the message is sent to the DLQ.
+     - Errors during message consumption or processing are logged for monitoring and debugging.
+
+#### 3. **Graceful Shutdown**
+   - **Purpose**: Ensures that the consumer can gracefully shut down, processing any in-flight messages before exiting.
+   - **How It Works**: 
+     - Upon receiving shutdown signals (`SIGINT`, `SIGTERM`), the consumer stops consuming new messages and finishes processing the current batch.
+     - Logs and metrics are flushed before the consumer stops.
+
+#### 4. **Backpressure Handling**
+   - **Purpose**: Prevents the system from being overwhelmed by too many messages.
+   - **How It Works**: 
+     - The consumer implements rate-limiting and backpressure handling by controlling the rate at which messages are consumed and processed.
+     - This helps manage high message throughput and ensures the system does not exceed capacity.
+
+#### 5. **Logging and Metrics**
+   - **Purpose**: Tracks and logs the consumer’s activity for monitoring and troubleshooting.
+   - **Log Types**: 
+     - **Success Logs**: Log entries for successfully processed messages.
+     - **Error Logs**: Log entries for message validation failures and retry attempts.
+     - **Retry Logs**: When a message is retried due to transient issues.
+   - **Metrics**:
+     - **Message Consumption Rate**: Tracks how fast messages are being consumed.
+     - **Retry Count**: Number of times a message has been retried.
+     - **DLQ Count**: Number of messages that have been sent to the Dead Letter Queue.
+     - **Message Processing Time**: The time taken to process each message.
+   - **Integration**: The logs can be forwarded to centralized logging systems like Datadog or ELK for detailed monitoring.
+
+#### 6. **Dead Letter Queue (DLQ)**
+   - **Purpose**: Holds messages that cannot be processed due to validation errors or failures after retry attempts.
+   - **How It Works**: 
+     - If a message fails validation or processing after the retry limit, it is sent to a Kafka topic (`user-login-dlq`).
+     - This ensures that no data is lost and can be inspected manually or reprocessed later.
+
+#### 7. **Kafka Consumer Group**
+   - **Purpose**: Allows multiple consumer instances to share the load of consuming messages from Kafka.
+   - **How It Works**: The consumer is part of a Kafka consumer group that distributes partitions across all instances of the consumer, ensuring load balancing and fault tolerance.
+
+#### 8. **Scalability**
+   - **Purpose**: Allows the consumer to scale horizontally to handle increased load.
+   - **How It Works**: 
+     - To scale the consumer, you can increase the number of consumer instances in the same Kafka consumer group.
+     - Kafka automatically balances the load by distributing topic partitions across the available consumers.
+
+### Consumer Flow
+
+1. **Consume Message**: The consumer listens to the `user-login` Kafka topic.
+2. **Message Validation and Filtering**: Each message is validated for required fields (`UserID`, `AppVersion`, `DeviceType`). Invalid messages are forwarded to the DLQ, while valid messages are processed further.
+3. **Retry Logic**: If a transient failure occurs (e.g., network issues), the message will be retried a predefined number of times.
+4. **Forward Valid Message**: Valid messages are forwarded to the `processed-user-login` topic.
+5. **Graceful Shutdown**: Upon receiving a shutdown signal, the consumer gracefully finishes processing messages and exits.
+
+### Configuration
+
+The consumer is configured via the `.env` file and can be customized with the following parameters:
+
+- `KAFKA_BROKER_URL`: The address of the Kafka broker (e.g., `localhost:29092`).
+- `INPUT_TOPIC`: The Kafka topic to consume messages from (`user-login`).
+- `OUTPUT_TOPIC`: The Kafka topic to send valid, processed messages to (`processed-user-login`).
+- `DLQ_TOPIC`: The topic for invalid messages (`user-login-dlq`).
+- `CONSUMER_GROUP`: The name of the consumer group (used for consumer group management in Kafka).
+- `RETRY_LIMIT`: The maximum number of retry attempts for a message before it is sent to the DLQ.
+- `LOG_LEVEL`: The logging level (e.g., `debug`, `info`, `warn`, `error`).
+
+### Docker Configuration
+
+The consumer is containerized using Docker. Below is the `Dockerfile` and `docker-compose.yml` used for the consumer service.
+
+#### Dockerfile
+
+```Dockerfile
+# Use the official Go image as a base image
+FROM golang:1.19-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Go modules manifests
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the source code
+COPY . .
+
+# Build the Go application
+RUN go build -o consumer .
+
+# Expose the port that the application will run on
+EXPOSE 8080
+
+# Run the application
+CMD ["./consumer"]
+
+```
+
+### docker-compose.yml 
+```docker-compose.yml
+
+services:
+  data-consumer:
+    container_name: ${PROJECT_NAME}-consumer
+    env_file:
+      - .env
+    build:
+      context: ./data-consumer
+    depends_on:
+      - kafka
+    networks:
+      - kafka-network
+```
+
 ## Architecture Diagram
 
 ![Real-time Streaming Data Pipeline Architecture](./images/architecture_diagram.png)
+
 
 
 ## Running the Project Locally
