@@ -140,17 +140,17 @@ func main() {
 }
 
 func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string) {
-	/**
-	 * ProcessMessages:
-	 *
-	 * Processes messages from the message channel and sends them to the appropriate topic.
-	 *
-	 * @param ctx: Context for managing worker goroutine lifecycle.
-	 * @param messageChan: Channel for receiving messages from the main consumer loop.
-	 * @param producer: Kafka producer instance for sending processed messages.
-	 * @param outputTopic: Name of the output topic for valid messages.
-	 * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
-	 */
+    /**
+     * ProcessMessages:
+     *
+     * Processes messages from the message channel and sends them to the appropriate topic.
+     *
+     * @param ctx: Context for managing worker goroutine lifecycle.
+     * @param messageChan: Channel for receiving messages from the main consumer loop.
+     * @param producer: Kafka producer instance for sending processed messages.
+     * @param outputTopic: Name of the output topic for valid messages.
+     * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
+     */
 	for {
 		select {
 		case <-ctx.Done():
@@ -162,16 +162,40 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 
 			processedMsg, valid := processMessage(msg.Value)
 			if !valid {
-				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d",
+				// Create a structured error response with more details
+				dlqMessage := map[string]interface{}{
+					"error": map[string]interface{}{
+						"reason":   "Invalid message structure",
+						"message":  msg.Value,
+						"metadata": map[string]interface{}{
+							"topic":     *msg.TopicPartition.Topic,
+							"partition": msg.TopicPartition.Partition,
+							"offset":    msg.TopicPartition.Offset,
+						},
+					},
+				}
+
+				// Marshal error message to JSON
+				dlqBytes, err := json.Marshal(dlqMessage)
+				if err != nil {
+					log.Printf("Failed to marshal DLQ message: %v", err)
+					continue
+				}
+
+				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d", 
 					*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
-				publishWithRetry(producer, dlqTopic, msg.Value, 3)
+
+				// Send structured error response to DLQ
+				publishWithRetry(producer, dlqTopic, dlqBytes, 3)
 				continue
 			}
 
+			// If valid, send processed message to output topic
 			publishWithRetry(producer, outputTopic, processedMsg, 3)
 		}
 	}
 }
+
 
 func processMessage(value []byte) ([]byte, bool) {
 	/**
