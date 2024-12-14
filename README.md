@@ -69,17 +69,16 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
 The consumer component is designed to consume messages from a Kafka topic, validate and process those messages, and forward valid messages to another Kafka topic. It also handles invalid messages by placing them in a Dead Letter Queue (DLQ). This consumer is built to be highly robust, with error handling, retries, graceful shutdown, and filtering features.
 
 ### Design Choices
-    This consumer application is written in Go and leverages the confluentinc/confluent-kafka-go library for interacting with Apache Kafka. This choice offers several advantages:
-
+This consumer application is written in Go and leverages the confluentinc/confluent-kafka-go library for interacting with Apache Kafka. This choice offers several advantages:
    - **Go**: Go is a performant, statically typed language with excellent concurrency features, making it well-suited for building scalable and reliable message processing applications like this consumer.
    - **confluentinc/confluent-kafka-go**: This popular Go library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
 ### Directory Layout
-  The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
+The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
 
 ```
 data-consumer/
-├── Dockerfile          (Optional: Docker build configuration)
+├── Dockerfile          (Docker build configuration)
 ├── go.mod              (Go module dependency file)
 ├── go.sum               (Checksum file for dependencies)
 └── main.go              (Go source code for the consumer application)
@@ -88,6 +87,127 @@ data-consumer/
 ### ```main.go``` Breakdown
 
 The main.go file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
+
+This section provides a detailed explanation of the functions used in the consumer application, their purposes, input arguments, and returned values.
+
+### `main()`
+
+**Purpose**:  
+The main function initializes the Kafka consumer and producer, subscribes to the input topic, and sets up a worker pool to process messages concurrently. It also handles graceful shutdown upon receiving a termination signal.
+
+**Input Arguments**:  
+- None (entry point of the application).
+
+**Returned Values**:  
+- None (this function does not return any values).
+
+**Functionality**:
+- Sets up environment variables for input, output, and dead-letter queue (DLQ) topics.
+- Creates and configures Kafka consumer and producer.
+- Subscribes the consumer to the input topic.
+- Initiates a context and waits for termination signals to gracefully shut down.
+- Starts a worker pool to process messages from the consumer in parallel.
+- Polls the consumer for new messages and sends them to the worker pool for processing.
+
+---
+
+### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
+
+**Purpose**:  
+This function processes messages from the `messageChan` channel, validates the messages, and publishes them to either the output topic or the DLQ topic depending on the validation result.
+
+**Input Arguments**:
+- `ctx`: A context used for graceful shutdown (type: `context.Context`).
+- `messageChan`: A read-only channel of Kafka messages that the function will process (type: `<-chan *kafka.Message`).
+- `producer`: The Kafka producer used to publish processed messages (type: `*kafka.Producer`).
+- `outputTopic`: The Kafka topic to publish successfully processed messages (type: `string`).
+- `dlqTopic`: The Kafka topic to publish invalid messages to the Dead Letter Queue (DLQ) (type: `string`).
+
+**Returned Values**:  
+- None (this function does not return any values).
+
+**Functionality**:
+- Continuously processes messages from `messageChan`.
+- For each message, it validates the message and either:
+  - Publishes the processed message to the output topic if valid.
+  - Publishes the original message to the DLQ topic if invalid.
+- Handles message processing using a retry mechanism in case of failures.
+
+---
+
+### `processMessage(value []byte) ([]byte, bool)`
+
+**Purpose**:  
+This function unmarshals a raw Kafka message, validates its contents, and returns the processed message in JSON format. It returns `false` if the message is invalid and should be sent to the Dead Letter Queue (DLQ).
+
+**Input Arguments**:
+- `value`: The raw Kafka message (type: `[]byte`).
+
+**Returned Values**:
+- `[]byte`: The processed message in JSON format if valid (type: `[]byte`).
+- `bool`: A flag indicating whether the message is valid (`true` for valid messages, `false` for invalid ones).
+
+**Functionality**:
+- Unmarshals the message value into a `Message` struct.
+- Checks for the presence of required fields (`UserID`, `AppVersion`, `DeviceType`).
+- Validates the app version and IP address.
+- Converts the locale to lowercase.
+- Returns a `ProcessedMessage` with the original fields and a `ProcessedAt` timestamp.
+
+---
+
+### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
+
+**Purpose**:  
+This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
+
+**Input Arguments**:
+- `producer`: The Kafka producer used to publish the message (type: `*kafka.Producer`).
+- `topic`: The Kafka topic to publish the message to (type: `string`).
+- `message`: The message to be published (type: `[]byte`).
+- `maxRetries`: The maximum number of retry attempts (type: `int`).
+
+**Returned Values**:
+- None (this function does not return any values).
+
+**Functionality**:
+- Attempts to publish the message to the specified Kafka topic.
+- If the publishing fails, it retries the operation with exponential backoff, up to the specified maximum number of retries.
+
+---
+
+### `isPrivateIP(ip string) bool`
+
+**Purpose**:  
+This function checks whether an IP address is private.
+
+**Input Arguments**:
+- `ip`: The IP address to check (type: `string`).
+
+**Returned Values**:
+- `bool`: `true` if the IP address is private, `false` otherwise.
+
+**Functionality**:
+- Parses the provided IP address and checks if it falls within private IP address ranges.
+
+---
+
+### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
+
+**Purpose**:  
+This function listens for system termination signals (e.g., SIGINT, SIGTERM) and triggers a graceful shutdown of the consumer and producer.
+
+**Input Arguments**:
+- `cancel`: A function used to cancel the context and initiate a graceful shutdown (type: `context.CancelFunc`).
+- `consumer`: The Kafka consumer to be closed during shutdown (type: `*kafka.Consumer`).
+- `producer`: The Kafka producer to be closed during shutdown (type: `*kafka.Producer`).
+
+**Returned Values**:
+- None (this function does not return any values).
+
+**Functionality**:
+- Waits for a termination signal from the operating system.
+- Upon receiving a signal, it cancels the context and closes the Kafka consumer and producer, ensuring a graceful shutdown.
 
 
 ### Features
