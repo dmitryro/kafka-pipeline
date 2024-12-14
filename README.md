@@ -111,7 +111,7 @@ The main function initializes the Kafka consumer and producer, subscribes to the
 
 ---
 
-### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
+#### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
 
 **Purpose**:  
 This function processes messages from the `messageChan` channel, validates the messages, and publishes them to either the output topic or the DLQ topic depending on the validation result.
@@ -135,7 +135,7 @@ This function processes messages from the `messageChan` channel, validates the m
 
 ---
 
-### `processMessage(value []byte) ([]byte, bool)`
+#### `processMessage(value []byte) ([]byte, bool)`
 
 **Purpose**:  
 This function unmarshals a raw Kafka message, validates its contents, and returns the processed message in JSON format. It returns `false` if the message is invalid and should be sent to the Dead Letter Queue (DLQ).
@@ -156,7 +156,7 @@ This function unmarshals a raw Kafka message, validates its contents, and return
 
 ---
 
-### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
+#### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
 
 **Purpose**:  
 This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
@@ -176,7 +176,7 @@ This function attempts to publish a message to a Kafka topic. If the publishing 
 
 ---
 
-### `isPrivateIP(ip string) bool`
+#### `isPrivateIP(ip string) bool`
 
 **Purpose**:  
 This function checks whether an IP address is private.
@@ -192,7 +192,7 @@ This function checks whether an IP address is private.
 
 ---
 
-### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
+#### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
 
 **Purpose**:  
 This function listens for system termination signals (e.g., SIGINT, SIGTERM) and triggers a graceful shutdown of the consumer and producer.
@@ -210,7 +210,7 @@ This function listens for system termination signals (e.g., SIGINT, SIGTERM) and
 - Upon receiving a signal, it cancels the context and closes the Kafka consumer and producer, ensuring a graceful shutdown.
 
 
-### Features
+### Consumer Component Features
 
 #### 1. **Message Validation and Filtering**
    - **Purpose**: Ensures that each message contains required fields and adheres to a predefined schema.
