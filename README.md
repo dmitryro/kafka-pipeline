@@ -138,30 +138,26 @@ The consumer is containerized using Docker. Below is the `Dockerfile` and `docke
 #### Dockerfile
 
 ```Dockerfile
-# Use the official Go image as a base image
-FROM golang:1.19-alpine
+# Use the latest  Go image
+FROM golang:1.23.4
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the Go modules manifests
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
-# Copy the source code
+# Copy the application code
 COPY . .
 
 # Build the Go application
-RUN go build -o consumer .
+RUN go build -o data-consumer main.go
 
-# Expose the port that the application will run on
-EXPOSE 8080
-
-# Run the application
-CMD ["./consumer"]
-
+# Run the Go application
+CMD ["./data-consumer"]
 ```
 
 ### docker-compose.yml 
