@@ -69,9 +69,9 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
 The consumer component is designed to consume messages from a Kafka topic, validate and process those messages, and forward valid messages to another Kafka topic. It also handles invalid messages by placing them in a Dead Letter Queue (DLQ). This consumer is built to be highly robust, with error handling, retries, graceful shutdown, and filtering features.
 
 ### Design Choices
-This consumer application is written in Go and leverages the confluentinc/confluent-kafka-go library for interacting with Apache Kafka. This choice offers several advantages:
-   - **Go**: Go is a performant, statically typed language with excellent concurrency features, making it well-suited for building scalable and reliable message processing applications like this consumer.
-   - **confluentinc/confluent-kafka-go**: This popular Go library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
+This consumer application is written in ```Go``` and leverages the ```confluentinc/confluent-kafka-go``` library for interacting with Apache Kafka. This choice offers several advantages:
+   - **Go**: ```Go``` is a performant, statically typed language with excellent concurrency features, making it well-suited for building scalable and reliable message processing applications like this consumer.
+   - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
 ### Directory Layout
 The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
