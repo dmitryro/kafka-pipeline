@@ -95,7 +95,20 @@ This section describes the data types (structs) used in the consumer application
 
 ---
 
-### `Message`
+#### `Message`
+**Code**:
+```go
+type Message struct {
+    UserID     string `json:"user_id"`
+    AppVersion string `json:"app_version"`
+    DeviceType string `json:"device_type"`
+    IP         string `json:"ip"`
+    Locale     string `json:"locale"`
+    DeviceID   string `json:"device_id"`
+    Timestamp  int64  `json:"timestamp"`
+}
+```
+
 
 **Purpose**:  
 This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
@@ -115,7 +128,14 @@ This struct represents the structure of a raw message consumed from the Kafka in
 
 ---
 
-### `ProcessedMessage`
+#### `ProcessedMessage`
+**Code**:
+```go
+type ProcessedMessage struct {
+    Message
+    ProcessedAt string `json:"processed_at"`
+}
+```
 
 **Purpose**:  
 This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
