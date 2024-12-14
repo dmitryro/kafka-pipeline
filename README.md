@@ -90,10 +90,9 @@ The ```main.go``` file serves as the entry point for the consumer application. I
 
 
 ### Data Types
-
+---
 This section describes the data types (structs) used in the consumer application.
 
----
 
 #### `Message`
 ```go
@@ -148,7 +147,7 @@ This struct extends the `Message` struct and represents a processed message that
 
 
 ### Functions 
-
+---
 This section provides a detailed explanation of the functions used in the consumer application, their purposes, input arguments, and returned values.
 
 #### `main()`
