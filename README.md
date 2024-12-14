@@ -86,7 +86,7 @@ data-consumer/
 
 ### ```main.go``` Breakdown
 
-The main.go file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
+The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
 
 
 ### Data Types
