@@ -33,12 +33,12 @@ type ProcessedMessage struct {
 
 func main() {
 	inputTopic := os.Getenv("INPUT_TOPIC")
-	outputTopic :=  os.Getenv("OUTPUT_TOPIC")
-	dlqTopic :=  os.Getenv("DLQ_TOPIC")
+	outputTopic := os.Getenv("OUTPUT_TOPIC")
+	dlqTopic := os.Getenv("DLQ_TOPIC")
 
-    if inputTopic == "" || outputTopic == "" || dlqTopic == "" {
-        log.Fatal("One or more required environment variables are not set.")
-    }
+	if inputTopic == "" || outputTopic == "" || dlqTopic == "" {
+		log.Fatal("One or more required environment variables are not set.")
+	}
 
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("BOOTSTRAP_SERVERS"),
@@ -83,26 +83,26 @@ func main() {
 
 	log.Println("Consumer is running...")
 
+	// Main consumer loop to poll messages and pass them to the worker pool
 	for {
-	    select {
-	    case <-ctx.Done():
-	        close(messageChan)
-	        wg.Wait()
-	        return
-	    default:
-	        event := consumer.Poll(100)
-	        if event == nil {
-	            continue
-	        }
+		select {
+		case <-ctx.Done():
+			close(messageChan)
+			wg.Wait()
+			return
+		default:
+			event := consumer.Poll(100)
+			if event == nil {
+				continue
+			}
 
-	        switch ev := event.(type) {
-	        case *kafka.Message:
-	            messageChan <- ev
-	            // Commit offsets after processing
-	        case kafka.Error:
-	            log.Printf("Consumer error: %v", ev)
-	        }
-	    }
+			switch ev := event.(type) {
+			case *kafka.Message:
+				messageChan <- ev
+			case kafka.Error:
+				log.Printf("Consumer error: %v", ev)
+			}
+		}
 	}
 }
 
@@ -137,18 +137,18 @@ func processMessage(value []byte) ([]byte, bool) {
 	}
 
 	if msg.UserID == "" {
-	    log.Println("Skipping message due to missing UserID")
-	    return nil, false
+		log.Println("Skipping message due to missing UserID")
+		return nil, false
 	}
 
 	if msg.AppVersion == "" {
-	    log.Println("Skipping message due to missing AppVersion")
-	    return nil, false
+		log.Println("Skipping message due to missing AppVersion")
+		return nil, false
 	}
 
 	if msg.DeviceType == "" {
-	    log.Println("Skipping message due to missing DeviceType")
-	    return nil, false
+		log.Println("Skipping message due to missing DeviceType")
+		return nil, false
 	}
 
 	if msg.AppVersion < "2.0.0" {
@@ -209,6 +209,8 @@ func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer
 
 	log.Println("Shutting down gracefully...")
 	cancel()
+
+	// Gracefully close the consumer and producer without expecting a return value
 	consumer.Close()
 	producer.Close()
 }
