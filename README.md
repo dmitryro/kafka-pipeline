@@ -7,8 +7,17 @@
 * **[Introduction](#introduction)**
 * **[Key Features](#key_features)**
 * **[Design Choices](#design_choices)**
-* **[Consumer Documentation](#cunsumer_documentation)**
-
+* **[Consumer Documentation](#consumer_documentation)**
+* **[Running the Project Locally](#running_locally)**
+* **[Production Readiness](production_readiness)**
+* **[Production Readiness Enhancements](production_readiness_enhancements)**
+* **[Production Deployment Steps](production_deployment_steps)**
+* **[Deployment Commands](deployment_commands)**
+* **[Security and Compliance](security_and_compliance)**
+* **[Scalability](#scalability)**
+* **[Scaling Strategies](#scaling_strategies)**
+* **[Troubleshooting Tips](#troublesooting_tips)**
+* **[Conclusion](#conclusion)**
 
 ## Introduction <a name="introduction"></a>
 
@@ -189,7 +198,7 @@ services:
 
 
 
-## Running the Project Locally
+## Running the Project Locally <a name="running_locally"></a>
 
 ### Prerequisites
 - **Docker** and **Docker Compose** must be installed. 
@@ -265,7 +274,7 @@ OUTPUT_TOPIC=processed-user-login
 DLQ_TOPIC=user-login-dlq
 ```
 
-## Production Readiness
+## Production Readiness <a name="production_readiness"></a>
 
 ### 1. **Deployment to Kubernetes**
    - The solution can be deployed to **Kubernetes** for managing and scaling services in production. Kubernetes helps in automating the deployment, scaling, and management of containerized applications.
@@ -323,7 +332,7 @@ DLQ_TOPIC=user-login-dlq
 
 
 
-## Production Readiness Enhancements
+## Production Readiness Enhancements <a name="production_readiness_enhancements"></a>
 
 To ensure the application is production-ready, consider adding the following components:
 
@@ -356,7 +365,7 @@ To ensure the application is production-ready, consider adding the following com
    - Implement data versioning to handle backward and forward compatibility.
 
 
-## Production Deployment Steps
+## Production Deployment Steps <a name="production_deployment_steps"></a>
 
 To deploy this application in production, follow these steps:
 
@@ -394,8 +403,7 @@ To deploy this application in production, follow these steps:
    - Perform periodic recovery drills to validate backup integrity.
 
 
-## Deployment Commands
-
+## Deployment Commands <a name="deployment_commands"></a>
    1. **Build Docker Images:**
    ```bash
    docker build -t kafka-consumer:latest ./consumer
@@ -421,7 +429,7 @@ To deploy this application in production, follow these steps:
    kubectl logs -f <pod-name>
    ```
 
-## Security and Compliance
+## Security and Compliance <a name="security_and_compliance"></a>
 #### **IAM Roles for Kafka**
 
 Cloud-based Kafka services like Amazon MSK (Managed Streaming for Apache Kafka) and Confluent Cloud rely on Identity and Access Management (IAM) roles for securing access to Kafka resources. IAM roles are used to authenticate and authorize clients, services, and applications interacting with Kafka clusters.
@@ -490,8 +498,7 @@ Roles are assigned through the Confluent Cloud UI or via the API by the administ
 - **Monitor Role Assignments**: Regularly review and audit IAM roles to ensure that only authorized users and services have access to sensitive Kafka resources.
 - **Use Multi-Factor Authentication (MFA)**: Enhance security by enabling MFA for users with elevated IAM roles, such as administrators.
 
-## Scalability
-
+## Scalability <a name="scalability"></a>
 As the dataset grows, the application should be designed to scale efficiently. Here are the key strategies for scaling:
 
 1. **Horizontal Scaling of Consumers**:
@@ -511,7 +518,7 @@ As the dataset grows, the application should be designed to scale efficiently. H
    - If using cloud services like AWS, GCP, or Azure, ensure auto-scaling is enabled for Kafka brokers and application instances. This ensures that the infrastructure adapts to growing loads without manual intervention.
 
 
-## Scaling Strategies
+## Scaling Strategies <a name="scaling_strategies"></a>
 
 As the dataset grows, this application can scale effectively with the following strategies:
 
@@ -535,7 +542,7 @@ As the dataset grows, this application can scale effectively with the following 
    - Use frameworks like **Kafka Streams** or **Apache Flink** for stateful processing.
    - Consider data batch processing for non-real-time use cases with tools like **Apache Spark**.
 
-## Troubleshooting Tips
+## Troubleshooting Tips <a name="troublesooting_tips"></a>
 
 If you encounter issues while running the project, here are some common problems and solutions:
 
@@ -630,8 +637,7 @@ If you encounter issues while running the project, here are some common problems
 
 For additional support, please refer to the official Kafka documentation or open an issue on the GitHub repository.
 
-## Conclusion
-
+## Conclusion <a name="colnclusion"></a> 
 This solution provides a scalable, fault-tolerant real-time data pipeline using Kafka, Docker, and Go. The design ensures efficient message processing with a consumer that can handle retries and handle errors through the Dead Letter Queue. This setup can be easily deployed in production environments with Kubernetes and monitored using tools like Prometheus and Grafana.
 
 For any questions or support, feel free to open an issue on the repository.
