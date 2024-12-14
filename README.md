@@ -430,6 +430,7 @@ To deploy this application in production, follow these steps:
    kubectl logs -f <pod-name>
    ```
 
+
 ## Security and Compliance <a name="security_and_compliance"></a>
 #### **IAM Roles for Kafka**
 
