@@ -156,7 +156,7 @@ This section provides a detailed explanation of the functions used in the consum
 
 #### `main()`
 
-**Purpose**:  
+**Description**:  
 The main function initializes the Kafka consumer and producer, subscribes to the input topic, and sets up a worker pool to process messages concurrently. It also handles graceful shutdown upon receiving a termination signal.
 
 **Input Arguments**:  
@@ -177,7 +177,7 @@ The main function initializes the Kafka consumer and producer, subscribes to the
 
 #### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
 
-**Purpose**:  
+**Description**:  
 This function processes messages from the `messageChan` channel, validates the messages, and publishes them to either the output topic or the DLQ topic depending on the validation result.
 
 **Input Arguments**:
@@ -201,7 +201,7 @@ This function processes messages from the `messageChan` channel, validates the m
 
 #### `processMessage(value []byte) ([]byte, bool)`
 
-**Purpose**:  
+**Description**:  
 This function unmarshals a raw Kafka message, validates its contents, and returns the processed message in JSON format. It returns `false` if the message is invalid and should be sent to the Dead Letter Queue (DLQ).
 
 **Input Arguments**:
@@ -222,7 +222,7 @@ This function unmarshals a raw Kafka message, validates its contents, and return
 
 #### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
 
-**Purpose**:  
+**Description**:  
 This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
 
 **Input Arguments**:
@@ -242,7 +242,7 @@ This function attempts to publish a message to a Kafka topic. If the publishing 
 
 #### `isPrivateIP(ip string) bool`
 
-**Purpose**:  
+**Description**:  
 This function checks whether an IP address is private.
 
 **Input Arguments**:
@@ -258,7 +258,7 @@ This function checks whether an IP address is private.
 
 #### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
 
-**Purpose**:  
+**Description**:  
 This function listens for system termination signals (e.g., SIGINT, SIGTERM) and triggers a graceful shutdown of the consumer and producer.
 
 **Input Arguments**:
