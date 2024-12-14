@@ -17,7 +17,20 @@ import (
 )
 
 type Message struct {
-	/** Represents a message received from the Kafka topic. */
+    /**
+     * Message:
+     *
+     * Represents a message received from the Kafka topic.
+     *
+     * Fields:
+     *   - UserID: User ID associated with the message.
+     *   - AppVersion: App version used to generate the message.
+     *   - DeviceType: Type of device used to generate the message.
+     *   - IP: IP address of the device.
+     *   - Locale: Locale of the device.
+     *   - DeviceID: Unique identifier of the device.
+     *   - Timestamp: Timestamp of the message generation.
+     */   
 	UserID     string `json:"user_id"`
 	AppVersion string `json:"app_version"`
 	DeviceType string `json:"device_type"`
@@ -28,13 +41,27 @@ type Message struct {
 }
 
 type ProcessedMessage struct {
-	/** Represents a processed message, including the original message and timestamp of processing. */
+    /**
+     * ProcessedMessage:
+     *
+     * Represents a processed message, including the original message and a timestamp of processing.
+     *
+     * Fields:
+     *   - Message: The original message received from the Kafka topic.
+     *   - ProcessedAt: Timestamp indicating when the message was processed.
+     */   
 	Message
 	ProcessedAt string `json:"processed_at"`
 }
 
 func main() {
-	/** Main function initializing Kafka consumer and producer, subscribing to the input topic, and handling signals. */
+    /**
+     * Main function:
+     *
+     * Initializes the Kafka consumer and producer, subscribes to the input topic, sets up signal handling, 
+     * launches worker goroutines, and starts the main consumer loop.
+     */
+
 	inputTopic := os.Getenv("INPUT_TOPIC")
 	outputTopic := os.Getenv("OUTPUT_TOPIC")
 	dlqTopic := os.Getenv("DLQ_TOPIC")
@@ -113,7 +140,18 @@ func main() {
 }
 
 func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string) {
-	/** Processes messages from the channel and sends them to the appropriate topic. */
+   /**
+    * ProcessMessages:
+    *
+    * Processes messages from the message channel and sends them to the appropriate topic.
+    *
+    * @param ctx: Context for managing worker goroutine lifecycle.
+    * @param messageChan: Channel for receiving messages from the main consumer loop.
+    * @param producer: Kafka producer instance for sending processed messages.
+    * @param outputTopic: Name of the output topic for valid messages.
+    * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
+    */
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -158,7 +196,16 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 }
 
 func processMessage(value []byte) ([]byte, bool) {
-	/** Validates and processes a single message. */
+    /**
+     * ProcessMessage:
+     *
+     * Validates and processes a single message.
+     *
+     * @param value: Raw byte array containing the message payload (JSON).
+     *
+     * @return: A tuple containing the processed message (if valid) and a boolean indicating validity.
+     */
+
 	var msg Message
 	if err := json.Unmarshal(value, &msg); err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)
@@ -186,7 +233,16 @@ func processMessage(value []byte) ([]byte, bool) {
 }
 
 func isValidMessage(msg Message) bool {
-	/** Validates message structure. */
+    /**
+     * isValidMessage:
+     *
+     * Validates message 
+     *
+     * @param message: Message to be validated.
+     *
+     * @return: True if the message is valid, false otherwise. 
+     */
+
 	if msg.UserID == "" {
 		log.Println("Skipping message due to missing UserID")
 		return false
@@ -211,7 +267,17 @@ func isValidMessage(msg Message) bool {
 }
 
 func publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int) {
-	/** Publishes a message with retry logic in case of failure. */
+    /**
+     * PublishWithRetry:
+     *
+     * Publishes a message to a Kafka topic with retries.
+     *
+     * @param producer: Kafka producer instance for sending messages.
+     * @param topic: Name of the target Kafka topic.
+     * @param message: Message payload to be sent.
+     * @param maxRetries: Maximum number of retries for failed delivery attempts.
+     */
+
 	for i := 0; i < maxRetries; i++ {
 		err := producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
@@ -235,13 +301,31 @@ func publishWithRetry(producer *kafka.Producer, topic string, message []byte, ma
 }
 
 func isPrivateIP(ip string) bool {
-	/** Checks if an IP is private. */
+    /**
+     * IsPrivateIP:
+     *
+     * Checks if a given IP address is a private IP address.
+     *
+     * @param ip: The IP address to check.
+     *
+     * @return: True if the IP is private, false otherwise.
+     */
+
 	parsedIP := net.ParseIP(ip)
 	return parsedIP != nil && parsedIP.IsPrivate()
 }
 
 func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer) {
-	/** Handles termination signals and performs graceful shutdown. */
+    /**
+     * HandleSignals:
+     *
+     * Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
+     *
+     * @param cancel: Function to cancel the ongoing operations.
+     * @param consumer: Kafka consumer instance.
+     * @param producer: Kafka producer instance.
+     */
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
@@ -254,4 +338,3 @@ func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer
 
 	log.Println("Kafka consumer and producer closed successfully.")
 }
-
