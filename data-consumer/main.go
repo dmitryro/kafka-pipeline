@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
 )
 
 type Message struct {
@@ -49,9 +52,31 @@ type ProcessedMessage struct {
      * Fields:
      *   - Message: The original message received from the Kafka topic.
      *   - ProcessedAt: Timestamp indicating when the message was processed.
-     */   
+     */  
 	Message
 	ProcessedAt string `json:"processed_at"`
+}
+
+// Prometheus Metrics
+var (
+	kafkaMessagesProcessed = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "kafka_messages_processed_total",
+			Help: "Total number of Kafka messages processed.",
+		},
+		[]string{"result"},
+	)
+)
+
+func init() {
+    /**
+     * init:
+     *
+     * Initialize Prometheus
+     */
+
+	// Register Prometheus metrics
+	prometheus.MustRegister(kafkaMessagesProcessed)
 }
 
 func main() {
@@ -62,6 +87,7 @@ func main() {
      * launches worker goroutines, and starts the main consumer loop.
      */
 
+	// Initialize the Kafka consumer and producer
 	inputTopic := os.Getenv("INPUT_TOPIC")
 	outputTopic := os.Getenv("OUTPUT_TOPIC")
 	dlqTopic := os.Getenv("DLQ_TOPIC")
@@ -70,7 +96,6 @@ func main() {
 		log.Fatal("One or more required environment variables are not set.")
 	}
 
-	// Initialize the consumer
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("BOOTSTRAP_SERVERS"),
 		"group.id":          os.Getenv("CONSUMER_GROUP"),
@@ -81,7 +106,6 @@ func main() {
 	}
 	defer consumer.Close()
 
-	// Initialize the producer
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("BOOTSTRAP_SERVERS"),
 	})
@@ -90,7 +114,6 @@ func main() {
 	}
 	defer producer.Close()
 
-	// Subscribe to the input topic
 	err = consumer.Subscribe(inputTopic, nil)
 	if err != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", err)
@@ -184,13 +207,14 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d", 
 					*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
 
-				// Retry publishing to DLQ
 				publishWithRetry(producer, dlqTopic, dlqBytes, 3)
+				kafkaMessagesProcessed.WithLabelValues("dlq").Inc()
 				continue
 			}
 
 			// Send valid processed message to output topic
 			publishWithRetry(producer, outputTopic, processedMsg, 3)
+			kafkaMessagesProcessed.WithLabelValues("success").Inc()
 		}
 	}
 }
@@ -268,7 +292,7 @@ func isValidMessage(msg Message) bool {
 
 func publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int) {
     /**
-     * PublishWithRetry:
+     * publishWithRetry:
      *
      * Publishes a message to a Kafka topic with retries.
      *
@@ -337,4 +361,17 @@ func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer
 	producer.Close()
 
 	log.Println("Kafka consumer and producer closed successfully.")
+}
+
+func startMetricsServer() {
+    /**
+     * StartMetricsServer:
+     *
+     * Start Prometheus Metrics Server
+     */
+     
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		log.Fatal(http.ListenAndServe(":9090", nil))
+	}()
 }
