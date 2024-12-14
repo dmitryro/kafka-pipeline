@@ -4,13 +4,13 @@
 
 ## Table of Contents
 
-* **Introduction**
-* **Design Choices**
-* **Key Features**
-* **Consumer Documentation**
+* **[Introduction](#introduction)**
+* **[Key Features](#key_features)**
+* **[Design Choices](#design_choices)**
+* **[Consumer Documentation](#cunsumer_documentation)**
 
 
-## Introduction
+## Introduction <a name="introduction"></a>
 
 This project implements a real-time data streaming pipeline using **Apache Kafka**, **Docker**, and **Go**. It involves creating a system to consume, process, and produce data messages in Kafka topics, while ensuring scalability, fault tolerance, and efficient message handling. The pipeline consists of the following components:
 
@@ -21,13 +21,13 @@ This project implements a real-time data streaming pipeline using **Apache Kafka
 
 The solution involves setting up a Kafka consumer in Go that consumes messages from a Kafka topic (`user-login`), processes them based on certain rules, and publishes the processed data to another Kafka topic (`processed-user-login`). Any invalid messages are sent to a Dead Letter Queue (DLQ) topic (`user-login-dlq`). 
 
-## Key Features:
+## Key Features <a name="key_features"></a>
 - **Kafka consumer**: Reads messages from a Kafka topic (`user-login`), processes them based on certain checks, and publishes valid messages to the `processed-user-login` topic.
 - **Dead Letter Queue (DLQ)**: Invalid messages are sent to the `user-login-dlq` topic.
 - **Fault tolerance and retries**: The consumer ensures that messages are processed even in case of temporary issues, using retry logic with exponential backoff.
 - **Graceful shutdown**: The application handles shutdown signals to close Kafka consumer and producer connections cleanly.
 
-## Design Choices 
+## Design Choices <a name="design_choices"></a>
 
 ### 1. **Kafka Topics and Data Flow**
    - **Input Topic**: `user-login` – This is the main topic where messages are consumed from. Messages in this topic are expected to contain user login information in JSON format.
@@ -52,7 +52,7 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
    - **Graceful Shutdown**: The consumer listens for termination signals (e.g., SIGTERM) and shuts down Kafka connections cleanly, ensuring no data is lost.
 
 
-## Consumer Documentation
+## Consumer Documentation <a name="consumer_documentation"></a>
 
 ### Overview
 
