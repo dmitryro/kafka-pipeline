@@ -11,8 +11,8 @@
     * [Overview](#consumer_documentation_overview)
     * [Design Choices](#consumer_documentation_design_choices)
     * [Directory Laout](#consumer_documentation_directory_layout)
-    * [Data Type](#consumer_documentation_data_types)
-    * [Functions](#consumer_coumentation_functons)
+    * [Data Types](#consumer_documentation_data_types)
+    * [Functions](#consumer_documentation_functions)
 * **[Architecture Diagram](#archietcture_diagram)**
 * **[Running the Project Locally](#running_locally)**
 * **[Production Readiness](#production_readiness)**
