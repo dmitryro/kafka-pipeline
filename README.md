@@ -96,7 +96,6 @@ This section describes the data types (structs) used in the consumer application
 ---
 
 #### `Message`
-##### `Code`
 ```go
 type Message struct {
     UserID     string `json:"user_id"`
@@ -128,7 +127,6 @@ This struct represents the structure of a raw message consumed from the Kafka in
 ---
 
 #### `ProcessedMessage`
-**Code**:
 ```go
 type ProcessedMessage struct {
     Message
@@ -136,14 +134,14 @@ type ProcessedMessage struct {
 }
 ```
 
-**Description**:  
+##### `Description`
 This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
 
 **Fields**:
 - `Message` (type: `Message`): The original message, including all fields from the `Message` struct.
 - `ProcessedAt` (type: `string`): The timestamp indicating when the message was processed, formatted in RFC3339 format.
 
-**Purpose**:
+##### `Purpose`
 - This struct is used to represent the message after it has been validated and processed, including a `ProcessedAt` timestamp.
 - It is used for marshalling and publishing the processed message to the Kafka output topic.
 
