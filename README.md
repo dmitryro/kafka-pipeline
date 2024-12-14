@@ -88,9 +88,53 @@ data-consumer/
 
 The main.go file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
 
+
+### Data Types
+
+This section describes the data types (structs) used in the consumer application.
+
+---
+
+### `Message`
+
+**Purpose**:  
+This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
+
+**Fields**:
+- `UserID` (type: `string`): The ID of the user associated with the message.
+- `AppVersion` (type: `string`): The version of the application sending the message.
+- `DeviceType` (type: `string`): The type of device used by the user.
+- `IP` (type: `string`): The IP address of the device sending the message.
+- `Locale` (type: `string`): The locale (language/region) of the user.
+- `DeviceID` (type: `string`): The unique identifier of the device.
+- `Timestamp` (type: `int64`): The timestamp when the message was created.
+
+**Purpose**:
+- This struct is used to unmarshal the raw JSON message received from Kafka.
+- It serves as the base structure for validating and processing the message.
+
+---
+
+### `ProcessedMessage`
+
+**Purpose**:  
+This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
+
+**Fields**:
+- `Message` (type: `Message`): The original message, including all fields from the `Message` struct.
+- `ProcessedAt` (type: `string`): The timestamp indicating when the message was processed, formatted in RFC3339 format.
+
+**Purpose**:
+- This struct is used to represent the message after it has been validated and processed, including a `ProcessedAt` timestamp.
+- It is used for marshalling and publishing the processed message to the Kafka output topic.
+
+
+
+### Functions 
+
 This section provides a detailed explanation of the functions used in the consumer application, their purposes, input arguments, and returned values.
 
-### `main()`
+#### `main()`
 
 **Purpose**:  
 The main function initializes the Kafka consumer and producer, subscribes to the input topic, and sets up a worker pool to process messages concurrently. It also handles graceful shutdown upon receiving a termination signal.
