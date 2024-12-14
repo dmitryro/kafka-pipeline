@@ -415,7 +415,7 @@ services:
 
 1. Clone this repository:
    ```bash
-   git clone git@github.com:dmitryro/kafka-pipeline.git > data_pipeline 
+   git clone git@github.com:dmitryro/kafka-pipeline.git data_pipeline 
    cd data_pipeline
    ```
 
