@@ -8,6 +8,7 @@
 * **[Key Features](#key_features)**
 * **[Design Choices](#design_choices)**
 * **[Consumer Documentation](#consumer_documentation)**
+* **[Architecture Diagram](#archietcture_diagram)**
 * **[Running the Project Locally](#running_locally)**
 * **[Production Readiness](production_readiness)**
 * **[Production Readiness Enhancements](production_readiness_enhancements)**
@@ -192,7 +193,7 @@ services:
       - kafka-network
 ```
 
-## Architecture Diagram
+## Architecture Diagram <a name="archietcture_diagram"></a>
 
 ![Real-time Streaming Data Pipeline Architecture](./images/architecture_diagram.png)
 
@@ -637,7 +638,7 @@ If you encounter issues while running the project, here are some common problems
 
 For additional support, please refer to the official Kafka documentation or open an issue on the GitHub repository.
 
-## Conclusion <a name="colnclusion"></a> 
+## Conclusion <a name="conclusion"></a> 
 This solution provides a scalable, fault-tolerant real-time data pipeline using Kafka, Docker, and Go. The design ensures efficient message processing with a consumer that can handle retries and handle errors through the Dead Letter Queue. This setup can be easily deployed in production environments with Kubernetes and monitored using tools like Prometheus and Grafana.
 
 For any questions or support, feel free to open an issue on the repository.
