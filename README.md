@@ -10,11 +10,11 @@
 * **[Consumer Documentation](#consumer_documentation)**
 * **[Architecture Diagram](#archietcture_diagram)**
 * **[Running the Project Locally](#running_locally)**
-* **[Production Readiness](production_readiness)**
-* **[Production Readiness Enhancements](production_readiness_enhancements)**
-* **[Production Deployment Steps](production_deployment_steps)**
-* **[Deployment Commands](deployment_commands)**
-* **[Security and Compliance](security_and_compliance)**
+* **[Production Readiness](#production_readiness)**
+* **[Production Readiness Enhancements](#production_readiness_enhancements)**
+* **[Production Deployment Steps](#production_deployment_steps)**
+* **[Deployment Commands](#deployment_commands)**
+* **[Security and Compliance](#security_and_compliance)**
 * **[Scalability](#scalability)**
 * **[Scaling Strategies](#scaling_strategies)**
 * **[Troubleshooting Tips](#troublesooting_tips)**
