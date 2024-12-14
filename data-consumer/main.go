@@ -254,7 +254,15 @@ func publishWithRetry(producer *kafka.Producer, topic string, message []byte, ma
                         log.Printf("Message published to topic %s: %s", topic, string(message))
                         return
                 }
-                log.Printf("Retrying to produce message to topic %s (attempt %d/%d): %v", topic, i+1, maxRetries, err)
+
+                // Check for specific error messages or codes to determine retry logic
+                if strings.Contains(err.Error(), "network timeout") {
+                        log.Printf("Retrying to produce message to topic %s (attempt %d/%d): %v", topic, i+1, maxRetries, err)
+                } else {
+                        // Log critical errors and consider exiting the program
+                        log.Fatalf("Failed to produce message after %d attempts: %v", maxRetries, err)
+                }
+
                 time.Sleep(time.Duration(math.Pow(2, float64(i))) * time.Second) // Exponential backoff
         }
 
