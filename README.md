@@ -108,7 +108,7 @@ type Message struct {
 }
 ```
 
-##### `Description`
+**Description**:
 This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
 
 **Fields**:
@@ -120,7 +120,7 @@ This struct represents the structure of a raw message consumed from the Kafka in
 - `DeviceID` (type: `string`): The unique identifier of the device.
 - `Timestamp` (type: `int64`): The timestamp when the message was created.
 
-##### `Purpose`
+**Purpose**:
 - This struct is used to unmarshal the raw JSON message received from Kafka.
 - It serves as the base structure for validating and processing the message.
 
@@ -134,14 +134,14 @@ type ProcessedMessage struct {
 }
 ```
 
-##### `Description`
+**Description**:
 This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
 
 **Fields**:
 - `Message` (type: `Message`): The original message, including all fields from the `Message` struct.
 - `ProcessedAt` (type: `string`): The timestamp indicating when the message was processed, formatted in RFC3339 format.
 
-##### `Purpose`
+**Purpose**:
 - This struct is used to represent the message after it has been validated and processed, including a `ProcessedAt` timestamp.
 - It is used for marshalling and publishing the processed message to the Kafka output topic.
 
