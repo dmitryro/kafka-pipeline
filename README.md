@@ -95,7 +95,7 @@ This section describes the data types (structs) used in the consumer application
 
 ---
 
-#### `Message`
+##### `Message`
 **Code**:
 ```go
 type Message struct {
@@ -110,7 +110,7 @@ type Message struct {
 ```
 
 
-**Purpose**:  
+**Description**:  
 This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
 
 **Fields**:
@@ -128,7 +128,7 @@ This struct represents the structure of a raw message consumed from the Kafka in
 
 ---
 
-#### `ProcessedMessage`
+##### `ProcessedMessage`
 **Code**:
 ```go
 type ProcessedMessage struct {
@@ -137,7 +137,7 @@ type ProcessedMessage struct {
 }
 ```
 
-**Purpose**:  
+**Description**:  
 This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
 
 **Fields**:
