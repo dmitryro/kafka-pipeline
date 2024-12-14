@@ -8,6 +8,11 @@
 * **[Key Features](#key_features)**
 * **[Design Choices](#design_choices)**
 * **[Consumer Documentation](#consumer_documentation)**
+    * [Overview](#consumer_documentation_overview)
+    * [Design Choices](#consumer_documentation_design_choices)
+    * [Directory Laout](#consumer_documentation_directory_layout)
+    * [Data Type](#consumer_documentation_data_types)
+    * [Functions](#consumer_coumentation_functons)
 * **[Architecture Diagram](#archietcture_diagram)**
 * **[Running the Project Locally](#running_locally)**
 * **[Production Readiness](#production_readiness)**
@@ -64,16 +69,16 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
 
 ## Consumer Documentation <a name="consumer_documentation"></a>
 
-### Overview
+### Overview <a name="consumer_documentation_overview"></a>
 
 The consumer component is designed to consume messages from a Kafka topic, validate and process those messages, and forward valid messages to another Kafka topic. It also handles invalid messages by placing them in a Dead Letter Queue (DLQ). This consumer is built to be highly robust, with error handling, retries, graceful shutdown, and filtering features.
 
-### Design Choices
+### Design Choices <a name="consumer_documentation_design_choices"></a>
 This consumer application is written in ```Go``` and leverages the ```confluentinc/confluent-kafka-go``` library for interacting with Apache Kafka. This choice offers several advantages:
    - **Go**: ```Go``` is a performant, statically typed language with excellent concurrency features, making it well-suited for building scalable and reliable message processing applications like this consumer.
    - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
-### Directory Layout
+### Directory Layout <a name="consumer_documentation_directory_layout"></a>
 The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
 
 ```
@@ -84,12 +89,11 @@ data-consumer/
 └── main.go              (Go source code for the consumer application)
 ```
 
-### ```main.go``` Breakdown
-
+### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
 
 
-### Data Types
+### Data Types <a name="consumer_documentation_data_types"></a>
 ---
 This section describes the data types (structs) used in the consumer application.
 
@@ -146,7 +150,7 @@ This struct extends the `Message` struct and represents a processed message that
 
 
 
-### Functions 
+### Functions <a name="consumer_documentation_functions"></a>
 ---
 This section provides a detailed explanation of the functions used in the consumer application, their purposes, input arguments, and returned values.
 
