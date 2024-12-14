@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-consumer
+  labels:
+    app: kafka-consumer
+spec:
+  replicas: 3  # Adjust the number of replicas based on your needs
+  selector:
+    matchLabels:
+      app: kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-consumer
+    spec:
+      containers:
+      - name: consumer
+        image: <your-docker-image>  # Replace with your image (e.g., myregistry/consumer:latest)
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BROKER
+          valueFrom:
+            secretKeyRef:
+              name: kafka-secrets
+              key: broker
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: kafka-config
+              key: topic
+        - name: DLQ_TOPIC
+          value: "dlq-topic"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
