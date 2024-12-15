@@ -97,18 +97,19 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
    - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
 
-### Consumer Implementation <a hame="consumer_implementation"></a>
 
-### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
+### Consumer Implementation <a name="consumer_implementation"></a>
+
+#### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
 
 
-### Consumer Data Types <a name="consumer_documentation_data_types"></a>
+#### Consumer Data Types <a name="consumer_documentation_data_types"></a>
 ---
 This section describes the data types (structs) used in the consumer application.
 
 
-#### `Message`
+##### `Message`
 ```go
 type Message struct {
     UserID     string `json:"user_id"` 
@@ -139,7 +140,7 @@ This struct represents the structure of a raw message consumed from the Kafka in
 
 ---
 
-#### `ProcessedMessage`
+##### `ProcessedMessage`
 ```go
 type ProcessedMessage struct {
     Message
@@ -159,12 +160,12 @@ This struct extends the `Message` struct and represents a processed message that
 - It is used for marshalling and publishing the processed message to the Kafka output topic.
 
 
-### Consumer Functions <a name="consumer_documentation_functions"></a>
+#### Consumer Functions <a name="consumer_documentation_functions"></a>
 ---
 
 This section provides a comprehensive overview of all functions implemented in `main.go`, including their purposes, input arguments, and returned values.
 
-#### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
+##### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
 
 **Description**:  
 This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
@@ -184,7 +185,7 @@ This function attempts to publish a message to a Kafka topic. If the publishing 
 
 ---
 
-#### `isValidMessage(message []byte) bool`
+##### `isValidMessage(message []byte) bool`
 
 **Description**:  
 Validates the structure and content of incoming Kafka messages.
@@ -201,7 +202,7 @@ Validates the structure and content of incoming Kafka messages.
 
 ---
 
-#### `processMessage(message []byte) ([]byte, error)`
+##### `processMessage(message []byte) ([]byte, error)`
 
 **Description**:  
 Processes a Kafka message by performing necessary transformations.
@@ -219,7 +220,7 @@ Processes a Kafka message by performing necessary transformations.
 
 ---
 
-#### `isPrivateIP(ip string) bool`
+##### `isPrivateIP(ip string) bool`
 
 **Description**:  
 Determines whether a given IP address belongs to a private range.
@@ -236,7 +237,7 @@ Determines whether a given IP address belongs to a private range.
 
 ---
 
-#### `setupKafkaConsumer(brokers []string, groupID string, topic string) *kafka.Consumer`
+##### `setupKafkaConsumer(brokers []string, groupID string, topic string) *kafka.Consumer`
 
 **Description**:  
 Sets up a Kafka consumer to subscribe to a specific topic.
@@ -255,7 +256,7 @@ Sets up a Kafka consumer to subscribe to a specific topic.
 
 ---
 
-#### `setupKafkaProducer(brokers []string) *kafka.Producer`
+##### `setupKafkaProducer(brokers []string) *kafka.Producer`
 
 **Description**:  
 Configures a Kafka producer for publishing messages.
@@ -272,7 +273,7 @@ Configures a Kafka producer for publishing messages.
 
 ---
 
-#### `closeResources(producer *kafka.Producer, consumer *kafka.Consumer)`
+##### `closeResources(producer *kafka.Producer, consumer *kafka.Consumer)`
 
 **Description**:  
 Closes the Kafka producer and consumer to release resources gracefully.
@@ -290,7 +291,7 @@ Closes the Kafka producer and consumer to release resources gracefully.
 
 ---
 
-#### `handleError(err error)`
+##### `handleError(err error)`
 
 **Description**:  
 Handles errors by logging them or applying other custom logic.
@@ -307,7 +308,7 @@ Handles errors by logging them or applying other custom logic.
 
 ---
 
-#### `main()`
+##### `main()`
 
 **Description**:  
 The entry point of the application, orchestrating the setup and execution of the Kafka consumer and producer.
