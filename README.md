@@ -297,39 +297,79 @@ Processes a Kafka message by performing necessary transformations.
 
 ##### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
 
-**Description**:
-Processes messages from the message channel and sends them to the appropriate topic.
+**Description**:  
+This function processes Kafka messages from the input channel, applies validation, and routes messages to the appropriate Kafka topic. It handles invalid messages by publishing them to a Dead Letter Queue (DLQ) topic.
 
-**Input Arguments**:
-- `ctx`:  Context for managing worker goroutine lifecycle.
-- `messageChan`:  Channel for receiving messages from the main consumer loop.
-- `producer`: Kafka producer instance for sending processed messages.
-- `outputTopic`: Name of the output topic for valid messages.
-- `dlqTopic`: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
+**Input Arguments**:  
+- `ctx`: A `context.Context` used to manage cancellation and deadlines for processing.  
+- `messageChan`: A channel (`<-chan *kafka.Message`) from which incoming Kafka messages are received.  
+- `producer`: A Kafka producer (`*kafka.Producer`) used for sending messages to Kafka topics.  
+- `outputTopic`: The Kafka topic to which valid messages are published (`string`).  
+- `dlqTopic`: The Kafka topic to which invalid messages are routed (`string`).  
 
-**Returned Values**:
-- None.
+**Returned Values**:  
+- None (this function does not return any values).
 
-**Functionality**:
-- Processes messages from the message channel and sends them to the appropriate topic.
+**Functionality**:  
+1. Listens to incoming Kafka messages from `messageChan`.  
+2. For each message:
+   - Validates the message using a validation function (e.g., `isValidMessage`).  
+   - Publishes valid messages to the specified `outputTopic`.  
+   - Routes invalid messages to the `dlqTopic`.  
+3. Handles errors and ensures processing continues gracefully.  
+4. Respects the context for graceful shutdown or cancellation.
+
+**Example Usage**:  
+```go
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+messageChan := make(chan *kafka.Message)
+producer := createProducer() // Assume createProducer initializes a Kafka producer.
+outputTopic := "processed-messages"
+dlqTopic := "dead-letter-queue"
+
+go processMessages(ctx, messageChan, producer, outputTopic, dlqTopic)
+
+```
 
 ---
+##### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
 
-##### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer`
+**Description**:  
+This function listens for system signals to gracefully shut down the Kafka consumer, producer, and other application resources. It ensures proper cleanup during application termination.
 
-**Description**:
-Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
+**Input Arguments**:  
+- `cancel`: A `context.CancelFunc` used to cancel any active contexts and signal shutdown.  
+- `consumer`: The Kafka consumer (`*kafka.Consumer`) to be closed during shutdown.  
+- `producer`: The Kafka producer (`*kafka.Producer`) to be closed during shutdown.  
 
-**Input Arguments**:
-- `cancel`:  context.CancelFunc - Function to cancel the ongoing operations.
-- `consumer`:  Kafka consumer instance.
-- `producer`: Kafka producer instance.
+**Returned Values**:  
+- None (this function does not return any values).
 
-**Returned Values**:
-- None.
+**Functionality**:  
+1. Waits for OS signals such as `SIGINT` or `SIGTERM` using a signal channel.  
+2. Upon receiving a signal:
+   - Calls `cancel` to terminate active contexts.  
+   - Closes the Kafka consumer and producer to release resources.  
+   - Logs the shutdown process for observability.  
 
-**Functionality**:
-- Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
+**Example Usage**:  
+```go
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+
+consumer := createConsumer() // Assume createConsumer initializes a Kafka consumer.
+producer := createProducer() // Assume createProducer initializes a Kafka producer.
+
+go handleSignals(cancel, consumer, producer)
+
+// Application logic here...
+```
+**Notes**:
+- This function is designed to run concurrently, typically in a goroutine, to handle signals without blocking main application logic.
+- Ensure proper error handling when closing the consumer and producer to manage edge cases.
+- Always use this function to enable graceful shutdown in Kafka-based applications.
 
 ---
 
@@ -356,23 +396,30 @@ startMetricsServer()
 
 ##### `init()`
 
-**Description**:
-Initialize Prometheus.
 
-**Input Arguments**:
-- None.
+**Description**:  
+The `init` function initializes necessary configurations and resources before the program executes the `main` function. It is called automatically by Go during the program's initialization phase.
 
-**Returned Values**:
-- None.
+**Input Arguments**:  
+- None (this is a Go standard initialization function and takes no arguments).
 
-**Functionality**:
-- SInitialize Prometheus.
+**Returned Values**:  
+- None (this function does not return any values).
 
-**Example Usage**:
+**Functionality**:  
+1. Loads configuration parameters, such as environment variables, if required by the application.  
+2. Initializes global variables or shared resources used throughout the application.  
+3. Ensures that essential setup steps are completed before the program starts executing the main logic.  
+
+**Example Usage**:  
+This function is called automatically and does not need to be explicitly invoked in the code.  
+
 ```go
-init()
-```
-
+func init() {
+    // Example: Set default configurations or environment variables
+    log.Println("Initializing application configurations...")
+    prometheus.MustRegister(kafkaMessagesProcessed)
+}
 ---
 
 ##### `main()`
