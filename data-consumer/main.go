@@ -322,7 +322,7 @@ func publishWithRetry(producer *kafka.Producer, topic string, message []byte, re
 		    TopicPartition: kafka.TopicPartition{
 		        Topic:     &topic, // `Topic` is now inside `TopicPartition`
 		        Partition: kafka.PartitionAny,
-		        Offset:    kafka.Offset(-1), 
+		        Offset:    kafka.OffsetEnd,
 		    },
 		    Value: message,
 		}
