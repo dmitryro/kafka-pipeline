@@ -14,7 +14,7 @@
     * [Consumer Flow](#consumer_flow)
     * [Consumer Environment Configuraton](#consumer_environment_configuration)
     * [Consumer Docker Configuraton](#consumer_docker_configutaton)
-    * [Consumer Logging and Monitoring]((#consumer_logging_and_monitoring)
+    * [Consumer Logging and Monitoring](#consumer_logging_and_monitoring)
     * [Consumer Directory Laout](#consumer_documentation_directory_layout)
     * [Consumer Data Types](#consumer_documentation_data_types)
     * [Consumer Functions](#consumer_documentation_functions)
