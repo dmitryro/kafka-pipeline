@@ -25,21 +25,15 @@ type ProducerInterface interface {
 	Close() error // Ensure Close() returns an error
 }
 
+// Define the ConsumerInterface for better testing
+type ConsumerInterface interface {
+	Subscribe(topic string, cb kafka.RebalanceCb) error
+	Poll(timeoutMs int) kafka.Event
+	Close() error
+}
+
+// Define the Message and ProcessedMessage structs as before
 type Message struct {
-	/**
-	 * Message:
-	 *
-	 * Represents a message received from the Kafka topic.
-	 *
-	 * Fields:
-	 *   - UserID: User ID associated with the message.
-	 *   - AppVersion: App version used to generate the message.
-	 *   - DeviceType: Type of device used to generate the message.
-	 *   - IP: IP address of the device.
-	 *   - Locale: Locale of the device.
-	 *   - DeviceID: Unique identifier of the device.
-	 *   - Timestamp: Timestamp of the message generation.
-	 */   
 	UserID     string `json:"user_id"`
 	AppVersion string `json:"app_version"`
 	DeviceType string `json:"device_type"`
@@ -50,15 +44,6 @@ type Message struct {
 }
 
 type ProcessedMessage struct {
-	/**
-	 * ProcessedMessage:
-	 *
-	 * Represents a processed message, including the original message and a timestamp of processing.
-	 *
-	 * Fields:
-	 *   - Message: The original message received from the Kafka topic.
-	 *   - ProcessedAt: Timestamp indicating when the message was processed.
-	 */  
 	Message
 	ProcessedAt string `json:"processed_at"`
 }
@@ -79,7 +64,6 @@ type KafkaProducerWrapper struct {
 }
 
 func (k *KafkaProducerWrapper) Close() error {
-	// Assuming Close() does not return an error, we return nil as an error
 	k.Producer.Close()
 	return nil
 }
@@ -306,7 +290,7 @@ func isPrivateIP(ip string) bool {
 	return parsedIP != nil && parsedIP.IsPrivate()
 }
 
-func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer ProducerInterface) {
+func handleSignals(cancel context.CancelFunc, consumer ConsumerInterface, producer ProducerInterface) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
