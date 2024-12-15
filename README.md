@@ -130,7 +130,8 @@ The following Go packages and external libraries are used in the application:
 ##### Additional Libraries:
 - **`net/http`**: Facilitates HTTP server implementation for metrics endpoint.
 
-These imports enable essential functionalities, such as Kafka communication, Prometheus metrics tracking, HTTP server setup, and concurrent processing.
+##### Note
+- These imports enable essential functionalities, such as Kafka communication, Prometheus metrics tracking, HTTP server setup, and concurrent processing.
 ---
 
 
