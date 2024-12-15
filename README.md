@@ -18,8 +18,7 @@
     * [Consumer Docker Configuraton](#consumer_docker_configuration)
     * [Consumer Logging and Monitoring](#consumer_logging_and_monitoring)
     * [Consumer Directory Laout](#consumer_documentation_directory_layout)
-    * [Consumer Data Types](#consumer_documentation_data_types)
-    * [Consumer Functions](#consumer_documentation_functions)
+    * [Consumer Implementation - main.go](#consumer_implementation)
     * [Consumer Unit Tests](#consumer_documentation_unit_tests)
     * [Consumer Production Notes](#consumer_documentation_production_notes)
 
@@ -98,8 +97,232 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
    - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
 
+### Consumer Implementaton - main.go <a hame="consumer_implementation_main_go"></a>
+
 ### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
+
+
+### Consumer Data Types <a name="consumer_documentation_data_types"></a>
+---
+This section describes the data types (structs) used in the consumer application.
+
+
+#### `Message`
+```go
+type Message struct {
+    UserID     string `json:"user_id"` 
+    AppVersion string `json:"app_version"`
+    DeviceType string `json:"device_type"`
+    IP         string `json:"ip"`
+    Locale     string `json:"locale"` 
+    DeviceID   string `json:"device_id"`
+    Timestamp  int64  `json:"timestamp"`
+}
+```
+
+**Description**:
+This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
+
+**Fields**:
+- `UserID` (type: `string`): The ID of the user associated with the message.
+- `AppVersion` (type: `string`): The version of the application sending the message.
+- `DeviceType` (type: `string`): The type of device used by the user.
+- `IP` (type: `string`): The IP address of the device sending the message.
+- `Locale` (type: `string`): The locale (language/region) of the user.
+- `DeviceID` (type: `string`): The unique identifier of the device. 
+- `Timestamp` (type: `int64`): The timestamp when the message was created. 
+
+**Purpose**:
+- This struct is used to unmarshal the raw JSON message received from Kafka.
+- It serves as the base structure for validating and processing the message.
+
+---
+
+#### `ProcessedMessage`
+```go
+type ProcessedMessage struct {
+    Message
+    ProcessedAt string `json:"processed_at"`
+}
+```
+
+**Description**:
+This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
+
+**Fields**:
+- `Message` (type: `Message`): The original message, including all fields from the `Message` struct.
+- `ProcessedAt` (type: `string`): The timestamp indicating when the message was processed, formatted in RFC3339 format.
+
+**Purpose**:
+- This struct is used to represent the message after it has been validated and processed, including a `ProcessedAt` timestamp.
+- It is used for marshalling and publishing the processed message to the Kafka output topic.
+
+
+### Consumer Functions <a name="consumer_documentation_functions"></a>
+---
+
+This section provides a comprehensive overview of all functions implemented in `main.go`, including their purposes, input arguments, and returned values.
+
+#### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
+
+**Description**:  
+This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
+
+**Input Arguments**:
+- `producer`: The Kafka producer used to publish the message (type: `*kafka.Producer`).
+- `topic`: The Kafka topic to publish the message to (type: `string`).
+- `message`: The message to be published (type: `[]byte`).
+- `maxRetries`: The maximum number of retry attempts (type: `int`).
+
+**Returned Values**:
+- None (this function does not return any values).
+
+**Functionality**:
+- Attempts to publish the message to the specified Kafka topic.
+- If the publishing fails, it retries the operation with exponential backoff, up to the specified maximum number of retries.
+
+---
+
+#### `isValidMessage(message []byte) bool`
+
+**Description**:  
+Validates the structure and content of incoming Kafka messages.
+
+**Input Arguments**:
+- `message`: The Kafka message to validate (type: `[]byte`).
+
+**Returned Values**:
+- `bool`: Returns `true` if the message is valid; otherwise, returns `false`.
+
+**Functionality**:
+- Checks if the message contains all required fields.
+- Verifies that the JSON format is correct and fields have valid data types.
+
+---
+
+#### `processMessage(message []byte) ([]byte, error)`
+
+**Description**:  
+Processes a Kafka message by performing necessary transformations.
+
+**Input Arguments**:
+- `message`: The Kafka message to process (type: `[]byte`).
+
+**Returned Values**:
+- `[]byte`: The processed message ready for publishing.
+- `error`: Returns an error if the message processing fails.
+
+**Functionality**:
+- Parses the message and applies business logic transformations.
+- Returns the modified message or an error if processing fails.
+
+---
+
+#### `isPrivateIP(ip string) bool`
+
+**Description**:  
+Determines whether a given IP address belongs to a private range.
+
+**Input Arguments**:
+- `ip`: The IP address to check (type: `string`).
+
+**Returned Values**:
+- `bool`: Returns `true` if the IP address is private; otherwise, returns `false`.
+
+**Functionality**:
+- Compares the IP address against known private IP ranges.
+- Handles IPv4 and IPv6 formats.
+
+---
+
+#### `setupKafkaConsumer(brokers []string, groupID string, topic string) *kafka.Consumer`
+
+**Description**:  
+Sets up a Kafka consumer to subscribe to a specific topic.
+
+**Input Arguments**:
+- `brokers`: A list of Kafka broker addresses (type: `[]string`).
+- `groupID`: The consumer group ID (type: `string`).
+- `topic`: The Kafka topic to subscribe to (type: `string`).
+
+**Returned Values**:
+- `*kafka.Consumer`: The configured Kafka consumer instance.
+
+**Functionality**:
+- Initializes a Kafka consumer with provided configurations.
+- Subscribes the consumer to the specified topic.
+
+---
+
+#### `setupKafkaProducer(brokers []string) *kafka.Producer`
+
+**Description**:  
+Configures a Kafka producer for publishing messages.
+
+**Input Arguments**:
+- `brokers`: A list of Kafka broker addresses (type: `[]string`).
+
+**Returned Values**:
+- `*kafka.Producer`: The configured Kafka producer instance.
+
+**Functionality**:
+- Sets up a Kafka producer with required settings for message publishing.
+- Ensures the producer is ready for sending messages to Kafka topics.
+
+---
+
+#### `closeResources(producer *kafka.Producer, consumer *kafka.Consumer)`
+
+**Description**:  
+Closes the Kafka producer and consumer to release resources gracefully.
+
+**Input Arguments**:
+- `producer`: The Kafka producer to close (type: `*kafka.Producer`).
+- `consumer`: The Kafka consumer to close (type: `*kafka.Consumer`).
+
+**Returned Values**:
+- None (this function does not return any values).
+
+**Functionality**:
+- Invokes the `Close` method on both producer and consumer.
+- Handles any errors during the shutdown process.
+
+---
+
+#### `handleError(err error)`
+
+**Description**:  
+Handles errors by logging them or applying other custom logic.
+
+**Input Arguments**:
+- `err`: The error to handle (type: `error`).
+
+**Returned Values**:
+- None (this function does not return any values).
+
+**Functionality**:
+- Logs the error for troubleshooting.
+- Implements optional recovery mechanisms depending on the error type.
+
+---
+
+#### `main()`
+
+**Description**:  
+The entry point of the application, orchestrating the setup and execution of the Kafka consumer and producer.
+
+**Input Arguments**:
+- None.
+
+**Returned Values**:
+- None.
+
+**Functionality**:
+- Reads environment variables for Kafka configurations.
+- Sets up Kafka consumer and producer instances.
+- Subscribes to the input topic and starts message processing.
+- Handles graceful shutdown upon receiving termination signals.
 
 
 
@@ -244,187 +467,6 @@ data-consumer/
 ├── main_test.go         (Unit Tests to the functions in main.go)
 └── main.go              (Go source code for the consumer application)
 ```
-
-### Consumer Data Types <a name="consumer_documentation_data_types"></a>
----
-This section describes the data types (structs) used in the consumer application.
-
-
-#### `Message`
-```go
-type Message struct {
-    UserID     string `json:"user_id"`
-    AppVersion string `json:"app_version"`
-    DeviceType string `json:"device_type"`
-    IP         string `json:"ip"`
-    Locale     string `json:"locale"`
-    DeviceID   string `json:"device_id"`
-    Timestamp  int64  `json:"timestamp"`
-}
-```
-
-**Description**:
-This struct represents the structure of a raw message consumed from the Kafka input topic. It contains the necessary fields that are expected in the message.
-
-**Fields**:
-- `UserID` (type: `string`): The ID of the user associated with the message.
-- `AppVersion` (type: `string`): The version of the application sending the message.
-- `DeviceType` (type: `string`): The type of device used by the user.
-- `IP` (type: `string`): The IP address of the device sending the message.
-- `Locale` (type: `string`): The locale (language/region) of the user.
-- `DeviceID` (type: `string`): The unique identifier of the device.
-- `Timestamp` (type: `int64`): The timestamp when the message was created.
-
-**Purpose**:
-- This struct is used to unmarshal the raw JSON message received from Kafka.
-- It serves as the base structure for validating and processing the message.
-
----
-
-#### `ProcessedMessage`
-```go
-type ProcessedMessage struct {
-    Message
-    ProcessedAt string `json:"processed_at"`
-}
-```
-
-**Description**:
-This struct extends the `Message` struct and represents a processed message that includes a timestamp indicating when it was processed.
-
-**Fields**:
-- `Message` (type: `Message`): The original message, including all fields from the `Message` struct.
-- `ProcessedAt` (type: `string`): The timestamp indicating when the message was processed, formatted in RFC3339 format.
-
-**Purpose**:
-- This struct is used to represent the message after it has been validated and processed, including a `ProcessedAt` timestamp.
-- It is used for marshalling and publishing the processed message to the Kafka output topic.
-
-
-
-### Consumer Functions <a name="consumer_documentation_functions"></a>
----
-This section provides a detailed explanation of the functions used in the consumer application, their purposes, input arguments, and returned values.
-
-#### `main()`
-
-**Description**:  
-The main function initializes the Kafka consumer and producer, subscribes to the input topic, and sets up a worker pool to process messages concurrently. It also handles graceful shutdown upon receiving a termination signal.
-
-**Input Arguments**:  
-- None (entry point of the application).
-
-**Returned Values**:  
-- None (this function does not return any values).
-
-**Functionality**:
-- Sets up environment variables for input, output, and dead-letter queue (DLQ) topics.
-- Creates and configures Kafka consumer and producer.
-- Subscribes the consumer to the input topic.
-- Initiates a context and waits for termination signals to gracefully shut down.
-- Starts a worker pool to process messages from the consumer in parallel.
-- Polls the consumer for new messages and sends them to the worker pool for processing.
-
----
-
-#### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
-
-**Description**:  
-This function processes messages from the `messageChan` channel, validates the messages, and publishes them to either the output topic or the DLQ topic depending on the validation result.
-
-**Input Arguments**:
-- `ctx`: A context used for graceful shutdown (type: `context.Context`).
-- `messageChan`: A read-only channel of Kafka messages that the function will process (type: `<-chan *kafka.Message`).
-- `producer`: The Kafka producer used to publish processed messages (type: `*kafka.Producer`).
-- `outputTopic`: The Kafka topic to publish successfully processed messages (type: `string`).
-- `dlqTopic`: The Kafka topic to publish invalid messages to the Dead Letter Queue (DLQ) (type: `string`).
-
-**Returned Values**:  
-- None (this function does not return any values).
-
-**Functionality**:
-- Continuously processes messages from `messageChan`.
-- For each message, it validates the message and either:
-  - Publishes the processed message to the output topic if valid.
-  - Publishes the original message to the DLQ topic if invalid.
-- Handles message processing using a retry mechanism in case of failures.
-
----
-
-#### `processMessage(value []byte) ([]byte, bool)`
-
-**Description**:  
-This function unmarshals a raw Kafka message, validates its contents, and returns the processed message in JSON format. It returns `false` if the message is invalid and should be sent to the Dead Letter Queue (DLQ).
-
-**Input Arguments**:
-- `value`: The raw Kafka message (type: `[]byte`).
-
-**Returned Values**:
-- `[]byte`: The processed message in JSON format if valid (type: `[]byte`).
-- `bool`: A flag indicating whether the message is valid (`true` for valid messages, `false` for invalid ones).
-
-**Functionality**:
-- Unmarshals the message value into a `Message` struct.
-- Checks for the presence of required fields (`UserID`, `AppVersion`, `DeviceType`).
-- Validates the app version and IP address.
-- Converts the locale to lowercase.
-- Returns a `ProcessedMessage` with the original fields and a `ProcessedAt` timestamp.
-
----
-
-#### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
-
-**Description**:  
-This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
-
-**Input Arguments**:
-- `producer`: The Kafka producer used to publish the message (type: `*kafka.Producer`).
-- `topic`: The Kafka topic to publish the message to (type: `string`).
-- `message`: The message to be published (type: `[]byte`).
-- `maxRetries`: The maximum number of retry attempts (type: `int`).
-
-**Returned Values**:
-- None (this function does not return any values).
-
-**Functionality**:
-- Attempts to publish the message to the specified Kafka topic.
-- If the publishing fails, it retries the operation with exponential backoff, up to the specified maximum number of retries.
-
----
-
-#### `isPrivateIP(ip string) bool`
-
-**Description**:  
-This function checks whether an IP address is private.
-
-**Input Arguments**:
-- `ip`: The IP address to check (type: `string`).
-
-**Returned Values**:
-- `bool`: `true` if the IP address is private, `false` otherwise.
-
-**Functionality**:
-- Parses the provided IP address and checks if it falls within private IP address ranges.
-
----
-
-#### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer)`
-
-**Description**:  
-This function listens for system termination signals (e.g., SIGINT, SIGTERM) and triggers a graceful shutdown of the consumer and producer.
-
-**Input Arguments**:
-- `cancel`: A function used to cancel the context and initiate a graceful shutdown (type: `context.CancelFunc`).
-- `consumer`: The Kafka consumer to be closed during shutdown (type: `*kafka.Consumer`).
-- `producer`: The Kafka producer to be closed during shutdown (type: `*kafka.Producer`).
-
-**Returned Values**:
-- None (this function does not return any values).
-
-**Functionality**:
-- Waits for a termination signal from the operating system.
-- Upon receiving a signal, it cancels the context and closes the Kafka consumer and producer, ensuring a graceful shutdown.
-
 
 ### Consumer Unit Tests <a name="consumer_documentation_unit_tests"></a>
 
