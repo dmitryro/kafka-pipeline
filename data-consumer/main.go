@@ -22,6 +22,7 @@ import (
 // Define the ProducerInterface for flexibility
 type ProducerInterface interface {
 	Produce(*kafka.Message, chan kafka.Event) error
+	Close() error // Ensure Close() returns an error
 }
 
 type Message struct {
@@ -73,6 +74,16 @@ var (
 	)
 )
 
+type KafkaProducerWrapper struct {
+	*kafka.Producer
+}
+
+func (k *KafkaProducerWrapper) Close() error {
+	// Assuming Close() does not return an error, we return nil as an error
+	k.Producer.Close()
+	return nil
+}
+
 func init() {
 	// Register Prometheus metrics
 	prometheus.MustRegister(kafkaMessagesProcessed)
@@ -92,8 +103,6 @@ func main() {
 		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
 		"group.id":          os.Getenv("KAFKA_CONSUMER_GROUP"),
 		"auto.offset.reset": os.Getenv("KAFKA_AUTO_OFFSET_RESET"),
-		"session.timeout.ms":  os.Getenv("KAFKA_SESSION_TIMEOUT"),
-		"socket.timeout.ms":  os.Getenv("KAFKA_SOCKET_TIMEOUT"),
 	})
 	if err != nil {
 		log.Fatalf("Failed to create consumer: %s", err)
@@ -108,6 +117,10 @@ func main() {
 	}
 	defer producer.Close()
 
+	// Wrap the producer
+	producerWrapper := &KafkaProducerWrapper{Producer: producer}
+
+	// Continue using the wrapped producer
 	err = consumer.Subscribe(inputTopic, nil)
 	if err != nil {
 		log.Fatalf("Failed to subscribe to topic: %s", err)
@@ -118,7 +131,7 @@ func main() {
 	wg := &sync.WaitGroup{}
 	messageChan := make(chan *kafka.Message, 100)
 
-	go handleSignals(cancel, consumer, producer)
+	go handleSignals(cancel, consumer, producerWrapper) // Pass wrapped producer as ProducerInterface
 
 	// Worker pool to process messages concurrently
 	workerPoolSize := 10
@@ -126,7 +139,7 @@ func main() {
 	for i := 0; i < workerPoolSize; i++ {
 		go func() {
 			defer wg.Done()
-			processMessages(ctx, messageChan, producer, outputTopic, dlqTopic)
+			processMessages(ctx, messageChan, producerWrapper, outputTopic, dlqTopic)
 		}()
 	}
 
@@ -293,7 +306,7 @@ func isPrivateIP(ip string) bool {
 	return parsedIP != nil && parsedIP.IsPrivate()
 }
 
-func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer) {
+func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer ProducerInterface) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
@@ -301,8 +314,13 @@ func handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer
 	log.Println("Shutting down gracefully...")
 	cancel()
 
-	consumer.Close()
-	producer.Close()
+	// Close producer and consumer
+	if err := producer.Close(); err != nil {
+		log.Printf("Failed to close producer: %v", err)
+	}
+	if err := consumer.Close(); err != nil {
+		log.Printf("Failed to close consumer: %v", err)
+	}
 
 	log.Println("Kafka consumer and producer closed successfully.")
 }
