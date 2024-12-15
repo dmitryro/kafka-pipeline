@@ -34,6 +34,20 @@ type ConsumerInterface interface {
 
 // Define the Message and ProcessedMessage structs as before
 type Message struct {
+    /**
+     * Message:
+     *
+     * Represents a message received from the Kafka topic.
+     *
+     * Fields:
+     *   - UserID: User ID associated with the message.
+     *   - AppVersion: App version used to generate the message.
+     *   - DeviceType: Type of device used to generate the message.
+     *   - IP: IP address of the device.
+     *   - Locale: Locale of the device.
+     *   - DeviceID: Unique identifier of the device.
+     *   - Timestamp: Timestamp of the message generation.
+     */  
 	UserID     string `json:"user_id"`
 	AppVersion string `json:"app_version"`
 	DeviceType string `json:"device_type"`
@@ -44,6 +58,15 @@ type Message struct {
 }
 
 type ProcessedMessage struct {
+    /**
+     * ProcessedMessage:
+     *
+     * Represents a processed message, including the original message and a timestamp of processing.
+     *
+     * Fields:
+     *   - Message: The original message received from the Kafka topic.
+     *   - ProcessedAt: Timestamp indicating when the message was processed.
+     */  
 	Message
 	ProcessedAt string `json:"processed_at"`
 }
@@ -60,6 +83,14 @@ var (
 )
 
 type KafkaProducerWrapper struct {
+    /**
+     * KafkaProducerWrapper
+     *
+     * Represents a wrapper around Producer object to allow more efficient contract and decoupling.
+     *
+     * Fields:
+     *   - *kafka.Producer - the producer to be wrapped for decoupling
+     */
 	*kafka.Producer
 }
 
@@ -69,12 +100,24 @@ func (k *KafkaProducerWrapper) Close() error {
 }
 
 func init() {
-	// Register Prometheus metrics
+    /**
+     * init:
+     *
+     * Initialize Prometheus
+     */
+    // Register Prometheus metrics
 	prometheus.MustRegister(kafkaMessagesProcessed)
 }
 
 func main() {
-	// Initialize the Kafka consumer and producer
+    /**
+     * Main function:
+     *
+     * Initializes the Kafka consumer and producer, subscribes to the input topic, sets up signal handling, 
+     * launches worker goroutines, and starts the main consumer loop.
+     */
+
+    // Initialize the Kafka consumer and producer
 	inputTopic := os.Getenv("KAFKA_INPUT_TOPIC")
 	outputTopic := os.Getenv("KAFKA_OUTPUT_TOPIC")
 	dlqTopic := os.Getenv("KAFKA_DLQ_TOPIC")
@@ -154,6 +197,18 @@ func main() {
 }
 
 func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer ProducerInterface, outputTopic, dlqTopic string) {
+    /**
+     * ProcessMessages:
+     *
+     * Processes messages from the message channel and sends them to the appropriate topic.
+     *
+     * @param ctx: Context for managing worker goroutine lifecycle.
+     * @param messageChan: Channel for receiving messages from the main consumer loop.
+     * @param producer: An interface to Kafka producer object for sending processed messages.
+     * @param outputTopic: Name of the output topic for valid messages.
+     * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
+     */
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -211,6 +266,16 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 }
 
 func processMessage(value []byte) ([]byte, bool) {
+    /**
+     * ProcessMessage:
+     *
+     * Validates and processes a single message.
+     *
+     * @param value: Raw byte array containing the message payload (JSON).
+     *
+     * @return: A tuple containing the processed message (if valid) and a boolean indicating validity.
+     */
+
 	var msg Message
 	if err := json.Unmarshal(value, &msg); err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)
@@ -238,6 +303,16 @@ func processMessage(value []byte) ([]byte, bool) {
 }
 
 func isValidMessage(msg Message) bool {
+    /**
+     * isValidMessage:
+     *
+     * Validates message 
+     *
+     * @param message: Message to be validated.
+     *
+     * @return: True if the message is valid, false otherwise. 
+     */
+
 	if msg.UserID == "" {
 		log.Println("Skipping message due to missing UserID")
 		return false
@@ -261,7 +336,20 @@ func isValidMessage(msg Message) bool {
 	return true
 }
 
+
 func publishWithRetry(producer ProducerInterface, topic string, message []byte, retries int, delay time.Duration) error {
+    /**
+     * publishWithRetry:
+     *
+     * Publishes a message to a Kafka topic with retries.
+     *
+     * @param producer: ProducerInterface, an interface to Kafka producer object  for sending messages.
+     * @param topic: Name of the target Kafka topic.
+     * @param message: Message payload to be sent.
+     * @param maxRetries: Maximum number of retries for failed delivery attempts.
+     * @param delay: - duration of the delay,
+     */
+
 	var err error
 	for attempt := 0; attempt < retries; attempt++ {
 		kafkaMessage := &kafka.Message{
@@ -286,11 +374,31 @@ func publishWithRetry(producer ProducerInterface, topic string, message []byte, 
 }
 
 func isPrivateIP(ip string) bool {
-	parsedIP := net.ParseIP(ip)
+    /**
+     * IsPrivateIP:
+     *
+     * Checks if a given IP address is a private IP address.
+     *
+     * @param ip: The IP address to check.
+     *
+     * @return: True if the IP is private, false otherwise.
+     */
+
+    parsedIP := net.ParseIP(ip)
 	return parsedIP != nil && parsedIP.IsPrivate()
 }
 
 func handleSignals(cancel context.CancelFunc, consumer ConsumerInterface, producer ProducerInterface) {
+    /**
+     * HandleSignals:
+     *
+     * Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
+     *
+     * @param cancel: Function to cancel the ongoing operations.
+     * @param consumer: ConsumerInterface interface to Kafka consumer object, decoupled for easier unit testing.
+     * @param producer: ProducerInterface, an interface to Kafka producer object  for sending messages, decoupled for easier unit testing.
+     */
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
@@ -310,7 +418,13 @@ func handleSignals(cancel context.CancelFunc, consumer ConsumerInterface, produc
 }
 
 func startMetricsServer() {
-	http.Handle("/metrics", promhttp.Handler())
+    /**
+     * StartMetricsServer:
+     *
+     * Start Prometheus Metrics Server
+     */
+
+    http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		log.Fatal(http.ListenAndServe(":9090", nil))
 	}()
