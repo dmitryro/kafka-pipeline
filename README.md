@@ -104,6 +104,37 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
 
 
+
+#### Imports Overview
+---
+The following Go packages and external libraries are used in the application:
+
+##### Standard Library Packages:
+- **`context`**: Provides context management for cancellations, deadlines, and metadata across API boundaries.
+- **`encoding/json`**: Enables encoding and decoding of JSON data.
+- **`fmt`**: Used for formatted I/O operations.
+- **`log`**: Provides logging capabilities for the application.
+- **`net`**: Used for networking utilities like IP validation.
+- **`os`**: Offers functionality for interacting with the operating system, such as environment variables and signals.
+- **`os/signal`**: Facilitates handling of operating system signals.
+- **`strings`**: Provides functions for string manipulation.
+- **`sync`**: Offers concurrency primitives such as `WaitGroup`.
+- **`syscall`**: Used for low-level system call handling.
+- **`time`**: Handles time-based operations, such as delays and timestamps.
+
+##### External Libraries:
+- **`github.com/confluentinc/confluent-kafka-go/v2/kafka`**: Official Go client for Apache Kafka, used for producing and consuming messages.
+- **`github.com/prometheus/client_golang/prometheus`**: Prometheus library for defining and managing custom metrics.
+- **`github.com/prometheus/client_golang/prometheus/promhttp`**: Provides an HTTP handler for exposing Prometheus metrics.
+
+##### Additional Libraries:
+- **`net/http`**: Facilitates HTTP server implementation for metrics endpoint.
+
+These imports enable essential functionalities, such as Kafka communication, Prometheus metrics tracking, HTTP server setup, and concurrent processing.
+---
+
+
+
 #### Consumer Data Types <a name="consumer_documentation_data_types"></a>
 ---
 This section describes the data types (structs) used in the consumer application.
