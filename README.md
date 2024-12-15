@@ -7,6 +7,8 @@
 * **[Introduction](#introduction)**
 * **[Key Features](#key_features)**
 * **[Design Choices](#design_choices)**
+    * [Consumer Component Features](#consumer_component_features)
+    * [Consumer Flow](#consumer_flow)
 * **[Consumer Documentation](#consumer_documentation)**
     * [Consumer Overview](#consumer_documentation_overview)
     * [Consumer Design Choices](#consumer_documentation_design_choices)
@@ -27,7 +29,7 @@
     * [Common Steps](#producton_readiness_common_steps)
     * [Enhancements](#producton_readiness_enhancements)
 
-* **[Project Deployment]**
+* **[Project Deployment](#project_deployment)**
     * [Running the Project Locally](#running_locally)
     * [Production Deployment Steps](#production_deployment_steps)
     * [Deploying In The Cloud](#deploying_in_the_cloud)
@@ -425,6 +427,96 @@ This function listens for system termination signals (e.g., SIGINT, SIGTERM) and
 
 
 ### Consumer Unit Tests <a name="consumer_documentation_unit_tests"></a>
+
+This section provides a detailed explanation of the unit tests included in the `main_test.go` file. Each test validates specific functionality within the consumer application to ensure correctness, reliability, and fault tolerance.
+
+#### `TestIsValidMessage`
+
+**Description**:
+Tests the `isValidMessage` function, which checks the validity of incoming Kafka messages.
+
+**Test Cases**:
+1. **Valid Message**: Verifies that a properly formatted message with all required fields is deemed valid.
+2. **Missing Required Field**: Tests a message missing the `user_id` field and expects it to be invalid.
+3. **Missing Timestamp Field**: Validates that messages without a `timestamp` field are considered invalid.
+4. **Invalid JSON Format**: Ensures that malformed JSON messages are flagged as invalid.
+5. **Incorrect Field Type**: Checks that a message with a non-numeric `timestamp` field is invalid.
+
+---
+
+#### `TestProcessMessage`
+
+**Description**:
+Tests the `processMessage` function, which processes valid Kafka messages.
+
+**Test Cases**:
+1. **Valid Message**: Confirms that a properly formatted message is processed correctly and returns expected structured data.
+2. **Invalid Message**: Ensures that messages missing required fields are flagged as invalid and not processed.
+
+---
+
+#### `TestPublishWithRetry`
+
+**Description**:
+Validates the `publishWithRetry` function, which publishes messages to Kafka with retry logic for fault tolerance.
+
+**Test Cases**:
+1. **Retry Logic**: Simulates an initial failure in publishing, followed by a successful retry, and ensures the retry logic works correctly.
+2. **Producer Call Validation**: Verifies that the mock Kafka producer is called the expected number of times during retries.
+
+---
+
+#### `TestIsPrivateIP`
+
+**Description**:
+Tests the `isPrivateIP` function, which checks if a given IP address belongs to a private range.
+
+**Test Cases**:
+1. **Private IP**: Validates that a typical private IP address (e.g., `192.168.1.1`) is correctly identified.
+2. **Public IP**: Ensures that a public IP address (e.g., `8.8.8.8`) is not marked as private.
+3. **Loopback IP**: Confirms that loopback addresses (e.g., `127.0.0.1`) are correctly flagged.
+4. **Reserved IP**: Validates detection of reserved ranges, such as APIPA (`169.254.1.1`), as private.
+
+---
+
+#### `TestClose`
+
+**Description**:
+Tests the `Close` method of the Kafka producer to ensure resources are released gracefully.
+
+**Test Cases**:
+1. **Successful Close**: Mocks the producer's `Close` method and verifies that it completes without errors.
+2. **Method Invocation**: Ensures the `Close` method is invoked as expected.
+
+---
+
+#### `TestHandleError`
+
+**Description**:
+Tests the `handleError` function, which handles application errors (e.g., logging or custom error handling).
+
+**Test Cases**:
+1. **Error Handling**: Validates that the function does not panic when called with an error.
+2. **Side Effects**: Ensures any side effects (e.g., logging) occur as expected.
+
+---
+
+#### Mock Implementation
+
+The tests utilize a `MockProducer` to simulate interactions with Kafka producers. This mock implementation validates producer behavior without requiring actual Kafka connections. Key methods include:
+- `Produce`: Simulates message production, with customizable return values for testing success and failure scenarios.
+- `Close`: Simulates closing the producer and ensures proper invocation during shutdown.
+
+---
+
+#### Dependencies
+
+The tests use the following libraries:
+- **Testify**: For assertions and mocking.
+- **Go Testing Package**: Provides the standard testing framework.
+
+Each test case ensures the application behaves as expected under various scenarios, contributing to the overall reliability and robustness of the system.
+
 
 
 
