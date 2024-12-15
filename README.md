@@ -165,42 +165,116 @@ This struct extends the `Message` struct and represents a processed message that
 
 This section provides a comprehensive overview of all functions implemented in `main.go`, including their purposes, input arguments, and returned values.
 
-##### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int)`
+#### `publishWithRetry(producer *kafka.Producer, topic string, message []byte, retries int, delay time.Duration)`
 
-**Description**:  
-This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with exponential backoff up to a maximum number of retries.
+**Description**:
+This function attempts to publish a message to a Kafka topic. If the publishing fails, it retries the operation with a specified delay between attempts, up to a maximum number of retries.
 
 **Input Arguments**:
 - `producer`: The Kafka producer used to publish the message (type: `*kafka.Producer`).
 - `topic`: The Kafka topic to publish the message to (type: `string`).
 - `message`: The message to be published (type: `[]byte`).
-- `maxRetries`: The maximum number of retry attempts (type: `int`).
+- `retries`: The maximum number of retry attempts (type: `int`).
+- `delay`: The delay duration between retry attempts (type: `time.Duration`).
 
 **Returned Values**:
-- None (this function does not return any values).
+- Returns `nil` if the message is successfully published.
+- Returns an `error` if all retries fail.
 
 **Functionality**:
-- Attempts to publish the message to the specified Kafka topic.
-- If the publishing fails, it retries the operation with exponential backoff, up to the specified maximum number of retries.
+- Prepares the Kafka message with the specified topic and message payload.
+- Publishes the message using the provided Kafka producer.
+- If publishing fails, logs the error and retries the operation after waiting for the specified delay.
+- Returns the last encountered error if all retry attempts are unsuccessful.
 
----
+**Example Usage**:
+```go
+producer, err := kafka.NewProducer(&kafka.ConfigMap{
+    "bootstrap.servers": "localhost:9092",
+})
+if err != nil {
+    log.Fatalf("Failed to create producer: %v", err)
+}
+defer producer.Close()
 
-##### `isValidMessage(message []byte) bool`
+message := []byte("Hello, Kafka!")
+topic := "example-topic"
+retries := 5
+delay := 2 * time.Second
+
+err = publishWithRetry(producer, topic, message, retries, delay)
+if err != nil {
+    log.Fatalf("Failed to publish message: %v", err)
+} else {
+    log.Println("Message successfully published.")
+}
+
+```
+
+
+#### `isPrivateIP(ip string) bool`
 
 **Description**:  
-Validates the structure and content of incoming Kafka messages.
+This function checks if a given IP address is a private IP address.
 
-**Input Arguments**:
-- `message`: The Kafka message to validate (type: `[]byte`).
+**Input Arguments**:  
+- `ip` (`string`): The IP address to check, represented as a string.
 
-**Returned Values**:
-- `bool`: Returns `true` if the message is valid; otherwise, returns `false`.
+**Returned Values**:  
+- Returns `true` if the provided IP address is private.  
+- Returns `false` otherwise.
 
-**Functionality**:
-- Checks if the message contains all required fields.
-- Verifies that the JSON format is correct and fields have valid data types.
+**Functionality**:  
+1. Parses the input string to validate its format as an IP address.  
+2. Checks if the IP address falls within the ranges defined for private IP addresses:  
+   - `10.0.0.0` to `10.255.255.255` (Class A)  
+   - `172.16.0.0` to `172.31.255.255` (Class B)  
+   - `192.168.0.0` to `192.168.255.255` (Class C)  
+3. Returns `true` if the IP matches any of the above ranges; otherwise, returns `false`.
 
----
+**Example Usage**:  
+```go
+ip := "192.168.1.1"
+if isPrivateIP(ip) {
+    fmt.Printf("%s is a private IP address.\n", ip)
+} else {
+    fmt.Printf("%s is not a private IP address.\n", ip)
+}
+
+```
+
+
+#### `isValidMessage(msg Message) bool`
+
+**Description**:  
+This function checks if a `Message` instance satisfies validation criteria to be considered valid.
+
+**Input Arguments**:  
+- `msg` (`Message`): The message object to validate, typically consisting of fields like `Key`, `Value`, and any additional metadata.
+
+**Returned Values**:  
+- Returns `true` if the message meets all validation criteria.  
+- Returns `false` otherwise.
+
+**Functionality**:  
+1. Ensures the `Key` field of the message is non-empty, as it may be used to partition messages or maintain uniqueness.  
+2. Validates that the `Value` field is non-empty to ensure the message contains meaningful content.  
+3. Performs additional checks as necessary to confirm the message adheres to the application's specific requirements.
+
+**Example Usage**:  
+```go
+msg := Message{
+    Key:   "exampleKey",
+    Value: []byte("exampleValue"),
+}
+
+if isValidMessage(msg) {
+    fmt.Println("The message is valid.")
+} else {
+    fmt.Println("The message is invalid.")
+}
+```
+
 
 ##### `processMessage(message []byte) ([]byte, error)`
 
@@ -220,91 +294,84 @@ Processes a Kafka message by performing necessary transformations.
 
 ---
 
-##### `isPrivateIP(ip string) bool`
 
-**Description**:  
-Determines whether a given IP address belongs to a private range.
+##### `processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string)`
+
+**Description**:
+Processes messages from the message channel and sends them to the appropriate topic.
 
 **Input Arguments**:
-- `ip`: The IP address to check (type: `string`).
+- `ctx`:  Context for managing worker goroutine lifecycle.
+- `messageChan`:  Channel for receiving messages from the main consumer loop.
+- `producer`: Kafka producer instance for sending processed messages.
+- `outputTopic`: Name of the output topic for valid messages.
+- `dlqTopic`: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
 
 **Returned Values**:
-- `bool`: Returns `true` if the IP address is private; otherwise, returns `false`.
+- None.
 
 **Functionality**:
-- Compares the IP address against known private IP ranges.
-- Handles IPv4 and IPv6 formats.
+- Processes messages from the message channel and sends them to the appropriate topic.
 
 ---
 
-##### `setupKafkaConsumer(brokers []string, groupID string, topic string) *kafka.Consumer`
+##### `handleSignals(cancel context.CancelFunc, consumer *kafka.Consumer, producer *kafka.Producer`
 
-**Description**:  
-Sets up a Kafka consumer to subscribe to a specific topic.
+**Description**:
+Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
 
 **Input Arguments**:
-- `brokers`: A list of Kafka broker addresses (type: `[]string`).
-- `groupID`: The consumer group ID (type: `string`).
-- `topic`: The Kafka topic to subscribe to (type: `string`).
+- `cancel`:  context.CancelFunc - Function to cancel the ongoing operations.
+- `consumer`:  Kafka consumer instance.
+- `producer`: Kafka producer instance.
 
 **Returned Values**:
-- `*kafka.Consumer`: The configured Kafka consumer instance.
+- None.
 
 **Functionality**:
-- Initializes a Kafka consumer with provided configurations.
-- Subscribes the consumer to the specified topic.
+- Handles termination signals (SIGINT, SIGTERM) and performs a graceful shutdown.
 
 ---
 
-##### `setupKafkaProducer(brokers []string) *kafka.Producer`
+##### `startMetricsServer()`
 
-**Description**:  
-Configures a Kafka producer for publishing messages.
+**Description**:
+Start Prometheus Metrics Server.
 
 **Input Arguments**:
-- `brokers`: A list of Kafka broker addresses (type: `[]string`).
+- None.
 
 **Returned Values**:
-- `*kafka.Producer`: The configured Kafka producer instance.
+- None.
 
 **Functionality**:
-- Sets up a Kafka producer with required settings for message publishing.
-- Ensures the producer is ready for sending messages to Kafka topics.
+- Start Prometheus Metrics Server.
+
+**Example Usage**:
+```go
+startMetricsServer()
+```
 
 ---
 
-##### `closeResources(producer *kafka.Producer, consumer *kafka.Consumer)`
+##### `init()`
 
-**Description**:  
-Closes the Kafka producer and consumer to release resources gracefully.
-
-**Input Arguments**:
-- `producer`: The Kafka producer to close (type: `*kafka.Producer`).
-- `consumer`: The Kafka consumer to close (type: `*kafka.Consumer`).
-
-**Returned Values**:
-- None (this function does not return any values).
-
-**Functionality**:
-- Invokes the `Close` method on both producer and consumer.
-- Handles any errors during the shutdown process.
-
----
-
-##### `handleError(err error)`
-
-**Description**:  
-Handles errors by logging them or applying other custom logic.
+**Description**:
+Initialize Prometheus.
 
 **Input Arguments**:
-- `err`: The error to handle (type: `error`).
+- None.
 
 **Returned Values**:
-- None (this function does not return any values).
+- None.
 
 **Functionality**:
-- Logs the error for troubleshooting.
-- Implements optional recovery mechanisms depending on the error type.
+- SInitialize Prometheus.
+
+**Example Usage**:
+```go
+init()
+```
 
 ---
 
