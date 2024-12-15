@@ -97,7 +97,7 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
    - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
 
-### Consumer Implementaton - ```main.go``` <a hame="consumer_implementation"></a>
+### Consumer Implementation <a hame="consumer_implementation"></a>
 
 ### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
