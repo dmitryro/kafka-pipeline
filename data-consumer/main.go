@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+    "fmt"
 	"log"
-	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -163,17 +163,17 @@ func main() {
 }
 
 func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, producer *kafka.Producer, outputTopic, dlqTopic string) {
-   /**
-    * ProcessMessages:
-    *
-    * Processes messages from the message channel and sends them to the appropriate topic.
-    *
-    * @param ctx: Context for managing worker goroutine lifecycle.
-    * @param messageChan: Channel for receiving messages from the main consumer loop.
-    * @param producer: Kafka producer instance for sending processed messages.
-    * @param outputTopic: Name of the output topic for valid messages.
-    * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
-    */
+    /**
+     * ProcessMessages:
+     *
+     * Processes messages from the message channel and sends them to the appropriate topic.
+     *
+     * @param ctx: Context for managing worker goroutine lifecycle.
+     * @param messageChan: Channel for receiving messages from the main consumer loop.
+     * @param producer: Kafka producer instance for sending processed messages.
+     * @param outputTopic: Name of the output topic for valid messages.
+     * @param dlqTopic: Name of the Dead Letter Queue (DLQ) topic for invalid messages.
+     */
 
 	for {
 		select {
@@ -198,23 +198,35 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 					},
 				}
 
+				delay := time.Second // Defined delay for retries
 				dlqBytes, err := json.Marshal(dlqMessage)
+
 				if err != nil {
 					log.Printf("Failed to marshal DLQ message: %v", err)
 					continue
 				}
 
-				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d", 
+				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d",
 					*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
 
-				publishWithRetry(producer, dlqTopic, dlqBytes, 3)
+				err = publishWithRetry(producer, dlqTopic, dlqBytes, 3, delay)
+				if err != nil {
+					log.Printf("Failed to publish to DLQ after retries: %v", err)
+				}
+
 				kafkaMessagesProcessed.WithLabelValues("dlq").Inc()
 				continue
 			}
 
-			// Send valid processed message to output topic
-			publishWithRetry(producer, outputTopic, processedMsg, 3)
+			err := publishWithRetry(producer, outputTopic, processedMsg, 3, time.Second)
+			if err != nil {
+				log.Printf("Failed to publish message to output topic: %v", err)
+				continue
+			}
+
 			kafkaMessagesProcessed.WithLabelValues("success").Inc()
+
+			log.Printf("Processed and published message: %s", string(processedMsg))
 		}
 	}
 }
@@ -290,7 +302,8 @@ func isValidMessage(msg Message) bool {
 	return true
 }
 
-func publishWithRetry(producer *kafka.Producer, topic string, message []byte, maxRetries int) {
+
+func publishWithRetry(producer *kafka.Producer, topic string, message []byte, retries int, delay time.Duration) error {
     /**
      * publishWithRetry:
      *
@@ -302,26 +315,32 @@ func publishWithRetry(producer *kafka.Producer, topic string, message []byte, ma
      * @param maxRetries: Maximum number of retries for failed delivery attempts.
      */
 
-	for i := 0; i < maxRetries; i++ {
-		err := producer.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-			Value:          message,
-		}, nil)
-		if err == nil {
-			log.Printf("Message published to topic %s: %s", topic, string(message))
-			return
+    var err error
+    for attempt := 0; attempt < retries; attempt++ {
+        // Prepare the message
+		kafkaMessage := &kafka.Message{
+		    TopicPartition: kafka.TopicPartition{
+		        Topic:     &topic, // `Topic` is now inside `TopicPartition`
+		        Partition: kafka.PartitionAny,
+		        Offset:    kafka.Offset(-1), 
+		    },
+		    Value: message,
 		}
 
-		if strings.Contains(err.Error(), "network timeout") {
-			log.Printf("Retrying to produce message to topic %s (attempt %d/%d): %v", topic, i+1, maxRetries, err)
-		} else {
-			log.Fatalf("Failed to produce message after %d attempts: %v", maxRetries, err)
-		}
+        // Produce the message
+        err = producer.Produce(kafkaMessage, nil)
+        if err == nil {
+            // If message is produced successfully, return nil
+            return nil
+        }
 
-		time.Sleep(time.Duration(math.Pow(2, float64(i))) * time.Second)
-	}
+        // Log the error and retry
+        fmt.Printf("Error producing message (attempt %d/%d): %v\n", attempt+1, retries, err)
+        time.Sleep(delay)
+    }
 
-	log.Printf("Failed to produce message to topic %s after %d attempts", topic, maxRetries)
+    // If all retries fail, return the last error encountered
+    return fmt.Errorf("failed to produce message after %d attempts: %v", retries, err)
 }
 
 func isPrivateIP(ip string) bool {
