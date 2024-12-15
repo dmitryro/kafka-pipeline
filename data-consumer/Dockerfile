@@ -16,5 +16,8 @@ COPY . .
 # Build the Go application
 RUN go build -o data-consumer main.go
 
+# Run tests
+RUN go test -v
+
 # Run the Go application
 CMD ["./data-consumer"]
