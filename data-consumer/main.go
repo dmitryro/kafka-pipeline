@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+    "strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -255,8 +255,16 @@ func main() {
 	go handleSignals(cancel, consumer, producerWrapper) // Pass wrapped producer as ProducerInterface
 
 	// Worker pool to process messages concurrently
-	workerPoolSize := 10
-	wg.Add(workerPoolSize)
+	workerPoolSize := 10 // Default value
+    if val := os.Getenv("KAFKA_WORKER_POOL_SIZE"); val != "" {
+        if parsedVal, err := strconv.Atoi(val); err == nil {
+            workerPoolSize = parsedVal
+        } else {
+            log.Fatalf("Invalid KAFKA_WORKER_POOL_SIZE value: %s. Must be an integer.", val)
+        }
+    }
+
+    wg.Add(workerPoolSize)
 	for i := 0; i < workerPoolSize; i++ {
 		go func() {
 			defer wg.Done()
@@ -333,6 +341,7 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 
 			processedMsg, valid := processMessage(msg.Value)
 			if !valid {
+				// Enrich and publish invalid messages to the DLQ
 				dlqMessage := map[string]interface{}{
 					"error": map[string]interface{}{
 						"reason":   "Invalid message structure",
@@ -356,24 +365,26 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 				log.Printf("Invalid message sent to DLQ: Topic: %s, Partition: %d, Offset: %d",
 					*msg.TopicPartition.Topic, msg.TopicPartition.Partition, msg.TopicPartition.Offset)
 
+				// Retry logic for DLQ publishing
 				err = publishWithRetry(producer, dlqTopic, dlqBytes, 3, delay)
 				if err != nil {
 					log.Printf("Failed to publish to DLQ after retries: %v", err)
 				}
 
+				// Increment Prometheus counter for DLQ messages
 				kafkaMessagesProcessed.WithLabelValues("dlq").Inc()
 				continue
 			}
 
+			// Retry logic for valid message publishing
 			err := publishWithRetry(producer, outputTopic, processedMsg, 3, time.Second)
 			if err != nil {
 				log.Printf("Failed to publish message to output topic: %v", err)
 				continue
 			}
 
+			// Increment Prometheus counter for successful processing
 			kafkaMessagesProcessed.WithLabelValues("success").Inc()
-
-			log.Printf("Processed and published message: %s", string(processedMsg))
 		}
 	}
 }
@@ -517,28 +528,25 @@ func isValidMessage(msg Message) bool {
  * - This function is useful when there are temporary issues with the Kafka broker or network that might prevent immediate delivery.
  * - The retry mechanism ensures that transient failures do not result in immediate message loss.
  */
-func publishWithRetry(producer ProducerInterface, topic string, message []byte, retries int, delay time.Duration) error {
+func publishWithRetry(producer ProducerInterface, topic string, msg []byte, maxRetries int, retryDelay time.Duration) error {
 	var err error
-	for attempt := 0; attempt < retries; attempt++ {
-		kafkaMessage := &kafka.Message{
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		err = producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{
 				Topic:     &topic,
 				Partition: kafka.PartitionAny,
-				Offset:    kafka.OffsetEnd,
 			},
-			Value: message,
-		}
+			Value: msg,
+		}, nil)
 
-		err = producer.Produce(kafkaMessage, nil)
 		if err == nil {
 			return nil
 		}
 
-		fmt.Printf("Error producing message (attempt %d/%d): %v\n", attempt+1, retries, err)
-		time.Sleep(delay)
+		log.Printf("Publish attempt %d/%d failed: %v", attempt, maxRetries, err)
+		time.Sleep(retryDelay)
 	}
-
-	return fmt.Errorf("failed to produce message after %d attempts: %v", retries, err)
+	return err
 }
 
 /**
@@ -650,4 +658,3 @@ func startMetricsServer() {
 		log.Fatal(http.ListenAndServe(":9090", nil))
 	}()
 }
-
