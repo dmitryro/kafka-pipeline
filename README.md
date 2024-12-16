@@ -103,7 +103,7 @@ Apache Kafka is a distributed streaming platform that serves as the core messagi
 The Kafka Producer is a Python-based service responsible for generating and sending messages to the `user-login` topic. Its primary role is to simulate a source of login events. Key features include:
 
 - **Message Generation**: Produces structured login events (e.g., user ID, timestamp, IP address) and sends them to the `user-login` topic.
-- **Third-Party Implementation**: Built using Python's `confluent-kafka` library for efficient and reliable communication with the Kafka broker.
+- **Third-Party Implementation**: Built using Python for efficient and reliable communication with the Kafka broker.
 - **Configuration**: Reads broker settings and topic names from environment variables, ensuring flexibility and ease of deployment.
 - **Integration**: The producer runs as a separate service within the Docker environment, interacting with the Kafka broker to produce messages continuously or at configured intervals.
 
