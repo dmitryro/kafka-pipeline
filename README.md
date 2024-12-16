@@ -545,13 +545,20 @@ The entry point of the application, orchestrating the setup and execution of the
 
 The consumer is configured via the `.env` file and can be customized with the following parameters:
 
-- `KAFKA_BROKER_URL`: The address of the Kafka broker (e.g., `localhost:29092`).
-- `INPUT_TOPIC`: The Kafka topic to consume messages from (`user-login`).
-- `OUTPUT_TOPIC`: The Kafka topic to send valid, processed messages to (`processed-user-login`).
-- `DLQ_TOPIC`: The topic for invalid messages (`user-login-dlq`).
-- `CONSUMER_GROUP`: The name of the consumer group (used for consumer group management in Kafka).
-- `RETRY_LIMIT`: The maximum number of retry attempts for a message before it is sent to the DLQ.
-- `LOG_LEVEL`: The logging level (e.g., `debug`, `info`, `warn`, `error`).
+- `KAFKA_BOOTSTRAP_SERVERS`: The address of the Kafka broker (e.g.,`kafka:9092`).
+- `KAFKA_BOOTSTRAP_HOST`: Kafka host for healthcheck purposes only in Consumer container.
+- `KAFKA_BOOTSTRAP_PORT`: Kafka port for healthcheck purposes only in Consumer container.
+- `KAFKA_INPUT_TOPIC`: The Kafka topic to consume messages from (`user-login`).
+- `KAFKA_OUTPUT_TOPIC`: The Kafka topic to send valid, processed messages to (`processed-user-login`).
+- `KAFKA_DLQ_TOPIC`: The topic for invalid messages (`user-login-dlq`).
+- `KAFKA_CONSUMER_GROUP`: The name of the consumer group (used for consumer group management in Kafka).
+- `KAFKA_RETRY_LIMIT`: The maximum number of retry attempts for a message before it is sent to the DLQ.
+- `KAFKA_LOG_LEVEL`: The logging level (e.g., `debug`, `info`, `warn`, `error`).
+- `KAFKA_SESSION_TIMEOUT`: Kafka optional session timeout variable.
+- `KAFKA_SOCKET_TIMEOUT`: Kafka optional socket timeout variable.
+- `KAFKA_AUTO_OFFSET_RESET`: Kafka auto offet reset can be set to "earliest", "latest", and "none".
+- `KAFKA_ENABLE_AUTO_COMMIT`: Autocommit can be set to true or false,
+
 
 ### Consumer Docker Configuration <a name="consumer_docker_configuration"></a>
 

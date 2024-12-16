@@ -7,7 +7,7 @@ WORKDIR /app
 # Copy the Go Modules manifests
 COPY go.mod go.sum ./
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+# Download all dependencies
 RUN go mod tidy
 
 # Copy the source code into the container
@@ -16,14 +16,14 @@ COPY . .
 # Build the Go app (no cross-compilation to start)
 RUN go build -o data-consumer main.go
 
-# Run tests (optional, depending on your needs)
+# Run tests (optional)
 RUN go test -v
 
 # Stage 2: Create the final smaller image for running the app
-FROM golang:1.23.1
+FROM golang:1.23.1-alpine
 
-# Install necessary dependencies for running the app (like certificates for SSL, etc.)
-RUN apt-get update && apt-get install -y ca-certificates
+# Install necessary dependencies for running the app (including libc6-compat)
+RUN apk --no-cache add ca-certificates libc6-compat
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/
@@ -31,6 +31,17 @@ WORKDIR /root/
 # Copy the pre-built binary from the builder stage
 COPY --from=builder /app/data-consumer .
 
-# Ensure the Go application logs to stdout and stderr
-CMD ["./data-consumer"]
+# Healthcheck script
+COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+RUN chmod +x /usr/local/bin/healthcheck.sh
 
+# Set the Healthcheck in Dockerfile
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+  CMD /usr/local/bin/healthcheck.sh || exit 1
+
+# Add debugging to check if app is running - optional debugging script.
+# (Uncomment for debugging purposes)
+#CMD ["sh", "-c", "echo 'Consumer container started' && ./data-consumer"]
+
+# Ensure the Go application logs to stdout and stderr (in case of debugging comment out this and uncomment the above to add healthchecks).
+CMD ["./data-consumer"]
