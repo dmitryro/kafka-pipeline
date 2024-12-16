@@ -4,38 +4,24 @@
 ## Table of Contents
 
 * **[Introduction](#introduction)**
-* **[Key Features](#key_features)**
-    * [Kafka Consumer & Producer Integration](#key_features_kafka_consumer_and_producer_itegration)
-    * [Message Processing & Validation](#key_features_message_processing_and_validation)
-    * [Retry Logic for Kafka Message Publishing](#key_features_retry_logic_for_kafka_message_publishing)
-    * [Prometheus Metrics for Monitoring](#key_features_prometheus_metrics_for_monitoring)
-    * [Graceful Shutdown](#key_features_graceful_shutdown)
-    * [Worker Pool for Concurrent Message Processing](#key_features_worker_pool_for_concurrent_message_processing)
-    * [Private IP Filtering](#key_features_private_ip_filtering)
-    * [Dead Letter Queue (DLQ)](#key_features_dead_letter_queue)
 
-* **[Design Choices](#design_choices)**
-    * [Consumer Component Features](#consumer_component_features)
-    * [Consumer Flow](#consumer_flow)
+* **[Key Components and Features](#key_features)**
+    * [Apache Zookeeper](#key_features_apache_zookeeper)
+    * [Apache Kafka] (#key_features_apache_kafka)
+    * [Apache Kafka Producer] (#key_features_producer)
+    * [Apache Kafka Consumer] (#key_features_consumer)
+    * [Docker Compose Configuraton] (#key_features_docker_configuration)
 
-* **[Consumer Documentation](#consumer_documentation)**
+
+* **[Consumer](#consumer_documentation)**
     * [Consumer Overview](#consumer_documentation_overview)
     * [Consumer Design Choices](#consumer_documentation_design_choices)
-    * [Consumer Component Features](#consumer_component_features)
-        * [Kafka Consumer & Producer Integration](#key_features_kafka_consumer_and_producer_itegration)
-        * [Message Processing & Validation](#key_features_message_processing_and_validation)
-        * [Retry Logic for Kafka Message Publishing](#key_features_retry_logic_for_kafka_message_publishing)
-        * [Prometheus Metrics for Monitoring](#key_features_prometheus_metrics_for_monitoring)
-        * [Graceful Shutdown](#key_features_graceful_shutdown)
-        * [Worker Pool for Concurrent Message Processing](#key_features_worker_pool_for_concurrent_message_processing)
-        * [Private IP Filtering](#key_features_private_ip_filtering)
-        * [Dead Letter Queue (DLQ)](#key_features_dead_letter_queue)
-    * [Consumer Flow](#consumer_flow)
-    * [Consumer Environment Configuraton](#consumer_environment_configuration)
-    * [Consumer Docker Configuraton](#consumer_docker_configuration)
-    * [Consumer Logging and Monitoring](#consumer_logging_and_monitoring)
+    * [Consumer Flow](#consumer_documentation_flow)
+    * [Consumer Features](#consumer_component_features)
+    * [Consumer Implementation](#consumer_documentation_implementation)
+    * [Consumer Environment Configuraton](#consumer_documentation_environment_configuration)
+    * [Consumer Docker Configuraton](#consumer_documentation_docker_configuration)
     * [Consumer Directory Laout](#consumer_documentation_directory_layout)
-    * [Consumer Implementation](#consumer_implementation)
     * [Consumer Unit Tests](#consumer_documentation_unit_tests)
     * [Consumer Production Notes](#consumer_documentation_production_notes)
 
@@ -44,16 +30,17 @@
     * [Production Readiness - Enhancements](#production_readiness_enhancements)
 
 * **[Project Deployment](#project_deployment)**
-    * [Running the Project Locally](#running_locally)
-    * [Production Deployment Steps](#production_deployment_steps)
-    * [Deploying In The Cloud](#deploying_in_the_cloud)
-    * [Deploying in Non-Cloud Environments](#deploying_in_non_cloud)
-    * [Deployment Commands](#deployment_commands) 
-    * [Kubernetes and Container Orchestration](#production_kubernetes_orchestration)
-    * [Logging and Alerging](#logging_and_alerging)
-
+    * [Running the Project Locally](#project_deployment_running_locally)
+    * [Production Deployment Steps](#project_deployment_production_deployment_steps)
+    * [Deployment Commands](#project_deployment_deployment_commands) 
+    * [Logging and Alerting](#project_deployment_logging_and_alerging)
 
 * **[Security and Compliance](#security_and_compliance)**
+    * [Security Considerations](#security_and_compliance_security_considerations)
+    * [Soc 2 Compliance](#security_and_compliance_soc_2)
+    * [Other Compliance Considerations](#security_and_compliance_other_considerations)
+    * [Best Practices](#security_and_compliance_best_practices)
+
 * **[Scalability](#scalability)**
     * [Scalability Overview](#scalability_overview)
     * [Horizontal Scaling of Kafka Brokers (Non-Cloud)](#scalability_horizontal_scaling_kafka_brokers_non_cloud)
@@ -68,142 +55,161 @@
     * [Conclusion](#scalability_conclusion)
 
 * **[Troubleshooting Tips](#troublesooting_tips)**
-
 * **[Conclusion](#conclusion)**
 
 
 ## Introduction <a name="introduction"></a>
 
-This project implements a real-time data streaming pipeline using **Apache Kafka**, **Docker**, and **Go**. It involves creating a system to consume, process, and produce data messages in Kafka topics, while ensuring scalability, fault tolerance, and efficient message handling. The pipeline consists of the following components:
+This project implements a real-time data streaming pipeline using **Apache Kafka**, **Docker**, **Python-based producer" and **Go-based consumer**. It involves creating a system to produce messages, consume them, validate  and process, and produce data messages in Kafka topics after being validated and processed, while ensuring scalability, fault tolerance, and efficient message handling. The pipeline consists of the following components:
 
 1. **Kafka** for message ingestion and distribution.
 2. **Docker** for containerization of services.
-3. **Go-based consumer service** to process and produce data.
+3. **Consumer service** to process, validate and produce data to another topic.
 4. **Python-based producer service** for simulating data generation and pushing it to Kafka.
 
 The solution involves setting up a Kafka consumer in Go that consumes messages from a Kafka topic (`user-login`), processes them based on certain rules, and publishes the processed data to another Kafka topic (`processed-user-login`). Any invalid messages are sent to a Dead Letter Queue (DLQ) topic (`user-login-dlq`). 
 
-## Key Features <a name="key_features"></a>
-- **Kafka consumer**: Reads messages from a Kafka topic (`user-login`), processes them based on certain checks, and publishes valid messages to the `processed-user-login` topic.
-- **Dead Letter Queue (DLQ)**: Invalid messages are sent to the `user-login-dlq` topic.
-- **Fault tolerance and retries**: The consumer ensures that messages are processed even in case of temporary issues, using retry logic with exponential backoff.
-- **Graceful shutdown**: The application handles shutdown signals to close Kafka consumer and producer connections cleanly.
+All the necessary environment variables are provided in ```.env``` file that is used from ```docker-compose.yml``` to make those environment variables available to the services configured in ```docker-compose.yml```.
 
 
-### 1. **Kafka Consumer & Producer Integration** <a name="key_features_kafka_consumer_and_producer_itegration"></a>
-   - **What it does**: This feature allows the application to consume messages from a Kafka topic, process them, and then produce the processed messages to another Kafka topic or Dead Letter Queue (DLQ) if the message is invalid.
-   - **Motivation**: Kafka is used for its ability to handle high-throughput data streams in a fault-tolerant manner. This feature integrates seamlessly with Kafka to support real-time streaming and processing.
-   - **How it was implemented**:
-     - The `kafka.NewConsumer` and `kafka.NewProducer` functions are used to initialize Kafka consumer and producer instances.
-     - A consumer subscribes to the input topic, polls for new messages, and forwards them to a worker pool for processing.
-     - The producer is responsible for publishing processed messages to the output topic, or failing that, to the DLQ.
-   - **How it should be tested**:
-     - Unit tests can validate Kafka message consumption and production by mocking the `ConsumerInterface` and `ProducerInterface` with predefined messages.
-   - **How it addresses issues**:
-     - This feature enables real-time processing of Kafka streams, crucial for high-volume, low-latency data pipelines as required in the assignment.
 
-### 2. **Message Processing & Validation** <a name="key_features_message_processing_and_validation"></a>
-   - **What it does**: Each message is processed and validated before being forwarded. Invalid messages are sent to a Dead Letter Queue (DLQ) for further investigation.
-   - **Motivation**: To ensure data integrity, only valid messages based on certain criteria (e.g., presence of `UserID`, valid `AppVersion`, etc.) are allowed to proceed to the output topic.
-   - **How it was implemented**:
-     - The `processMessage` function handles unmarshalling, validation, and processing of incoming messages. Valid messages are transformed and timestamped as `ProcessedMessage`.
-     - Invalid messages are identified and logged, and they are then sent to the DLQ using the `publishWithRetry` function to ensure fault tolerance.
-   - **How it should be tested**:
-     - Unit tests for message validation (e.g., ensuring that missing or invalid fields cause the message to be rejected).
-     - Simulating both valid and invalid messages should trigger the correct flow (either processing or DLQ publishing).
-   - **How it addresses issues**:
-     - The feature helps maintain the integrity of the data pipeline by preventing invalid data from being processed, ensuring downstream systems receive clean data.
+## Key Components and Features <a name="key_features"></a>
 
-### 3. **Retry Logic for Kafka Message Publishing** <a name="key_features_retry_logic_for_kafka_message_publishing"></a>
-   - **What it does**: When publishing a message to Kafka, if the operation fails, the application will retry the operation up to a specified number of attempts, with a delay between retries.
-   - **Motivation**: Retry logic improves fault tolerance, ensuring that transient errors in Kafka publishing do not result in lost data.
-   - **How it was implemented**:
-     - The `publishWithRetry` function is responsible for retrying message publication. It retries a maximum of `retries` times with a `delay` between attempts.
-   - **How it should be tested**:
-     - Mocking Kafka's producer failures and ensuring that the retry logic is triggered and the correct number of attempts is made before failing.
-   - **How it addresses issues**:
-     - This retry mechanism helps mitigate issues where transient network or Kafka broker failures may prevent message delivery, improving the reliability of the system.
+### [Apache Zookeeper](#key_features_apache_zookeeper)
+Apache Zookeeper is a distributed coordination service essential for managing the state and configuration of distributed systems like Apache Kafka. In this project:
 
-### 4. **Prometheus Metrics for Monitoring** <a name="key_features_prometheus_metrics_for_monitoring"></a>
-   - **What it does**: This feature integrates Prometheus for real-time monitoring of Kafka message processing. It tracks the number of successfully processed messages, as well as failed ones sent to the DLQ.
-   - **Motivation**: Monitoring metrics are critical for observing the health of the system, understanding message processing volumes, and detecting issues early.
-   - **How it was implemented**:
-     - A Prometheus counter, `kafkaMessagesProcessed`, is incremented every time a message is successfully processed or sent to the DLQ.
-     - A Prometheus metrics server is started on port `9090` using the `promhttp.Handler` to expose these metrics to Prometheus for scraping.
-   - **How it should be tested**:
-     - Integration tests can be written to confirm that the metrics are correctly incremented when messages are processed or failed.
-     - A manual test could involve verifying that the metrics endpoint (`/metrics`) is accessible and showing correct data.
-   - **How it addresses issues**:
-     - Prometheus monitoring ensures that the system’s health can be tracked continuously, helping quickly detect performance or operational issues in the Kafka message pipeline.
-
-### 5. **Graceful Shutdown** <a name="key_features_graceful_shutdown"></a>
-   - **What it does**: The system handles signals like `SIGINT` and `SIGTERM` to gracefully shut down the Kafka consumer and producer, ensuring no data is lost during shutdown.
-   - **Motivation**: Graceful shutdown ensures that the system can stop cleanly without losing messages in-flight or causing data corruption.
-   - **How it was implemented**:
-     - The `handleSignals` function listens for termination signals and invokes a cancel function to stop message processing.
-     - Once the signal is received, it shuts down the Kafka consumer and producer in an orderly manner, ensuring that no message is left unprocessed.
-   - **How it should be tested**:
-     - Test by simulating signals (e.g., `SIGINT` or `SIGTERM`) and verifying that the system stops gracefully without data loss.
-   - **How it addresses issues**:
-     - Ensures system stability and data integrity during shutdown, preventing issues with incomplete message processing.
-
-### 6. **Worker Pool for Concurrent Message Processing** <a name="key_features_worker_pool_for_concurrent_message_processing"></a>
-   - **What it does**: A worker pool processes messages concurrently to ensure efficient message handling and prevent bottlenecks in the data pipeline.
-   - **Motivation**: The worker pool allows the system to scale efficiently by processing multiple messages concurrently, which is crucial for high-throughput Kafka topics.
-   - **How it was implemented**:
-     - A worker pool is created with a fixed number of workers (`workerPoolSize`). Each worker listens for messages and processes them independently.
-     - The workers are synchronized using a `sync.WaitGroup` to ensure that all processing is completed before the program terminates.
-   - **How it should be tested**:
-     - Unit tests can check that multiple workers are correctly processing messages in parallel.
-     - Integration tests could simulate high message volumes to ensure that the system handles them efficiently.
-   - **How it addresses issues**:
-     - The worker pool enables parallel processing, which helps scale the system and ensures that the application can handle large volumes of messages.
-
-### 7. **Private IP Filtering** <a name="key_features_private_ip_filtering"></a>
-   - **What it does**: This feature filters out messages originating from private IP addresses to ensure that only valid, external data is processed.
-   - **Motivation**: Filtering private IP addresses prevents internal traffic from contaminating the data pipeline, ensuring that only relevant data is processed.
-   - **How it was implemented**:
-     - The `isPrivateIP` function checks if the IP address in a message is a private IP (i.e., within reserved ranges). If it is, the message is rejected.
-   - **How it should be tested**:
-     - Tests should verify that messages from private IPs are rejected and that the correct log messages are generated.
-   - **How it addresses issues**:
-     - Helps maintain the quality of data by ensuring that only external sources are processed.
-
-### 8. **Dead Letter Queue (DLQ)** <a name="key_features_dead_letter_queue"></a>
-   - **What it does**: Invalid messages are routed to a Dead Letter Queue (DLQ) for further investigation, ensuring that processing continues for valid messages even in the case of errors.
-   - **Motivation**: To ensure that invalid or corrupted messages do not interfere with normal processing while still allowing for troubleshooting and further action.
-   - **How it was implemented**:
-     - The `publishToDLQ` function sends invalid messages to the `user-login-dlq` Kafka topic. This process is triggered when a message fails validation or processing.
-   - **How it should be tested**:
-     - Unit tests can simulate invalid messages and confirm that they are correctly routed to the DLQ.
-   - **How it addresses issues**:
-     - DLQ provides a mechanism for isolating erroneous messages, ensuring that they do not block the flow of valid messages through the system.
+- **Role in Kafka**: Zookeeper coordinates and maintains metadata for Kafka brokers, topics, and partitions. It ensures leader election for partitions and keeps track of broker status.
+- **Integration**: Zookeeper is configured as a service to support the Kafka broker in managing its distributed state effectively. It enables Kafka's high availability and fault tolerance by maintaining up-to-date metadata.
+- **Configuration**: Zookeeper runs as a Docker service, ensuring consistency and easy deployment.
 
 ---
 
-## Design Choices <a name="design_choices"></a>
+### [Apache Kafka](#key_features_apache_kafka)
+Apache Kafka is a distributed streaming platform that serves as the core messaging system for this project. It allows applications to publish and consume streams of records in real-time. Key details include:
 
-### 1. **Kafka Topics and Data Flow**
-   - **Input Topic**: `user-login` – This is the main topic where messages are consumed from. Messages in this topic are expected to contain user login information in JSON format.
-   - **Output Topic**: `processed-user-login` – After processing, valid messages are published to this topic.
-   - **Dead Letter Queue (DLQ)**: `user-login-dlq` – Any invalid messages (e.g., missing fields or invalid data) are sent to this DLQ for further inspection.
+- **Message Broker**: Kafka acts as a central hub where the producer sends messages to specific topics, and consumers subscribe to those topics to process the data.
+- **Topics**: In this project, three topics are utilized:
+  - `user-login`: Receives raw login events from the producer.
+  - `processed-user-login`: Stores validated and processed login events.
+  - `user-login-dlq`: A Dead Letter Queue (DLQ) for invalid or errored events.
+- **Partitioning**: Topics are partitioned to distribute messages across multiple brokers, enabling scalability and parallel processing.
+- **Fault Tolerance**: Kafka ensures durability by replicating topic partitions across brokers, maintaining data availability even during failures.
+- **Configuration**: Kafka uses environment variables to define broker settings, including topic replication, log retention policies, and partition counts.
 
-### 2. **Consumer Logic in Go**
-   - The consumer subscribes to the `user-login` topic.
-   - It processes each message and validates fields like `UserID`, `AppVersion`, and `DeviceType`. If a message fails validation, it is sent to the DLQ.
-   - The consumer uses a worker pool model to handle message processing concurrently, improving throughput.
-   - Kafka consumer offsets are managed manually to provide greater control over message acknowledgment, which ensures that messages are not lost in case of a failure.
+---
 
-### 3. **Choice of Kafka, third party libraries and implementaton language** 
-   - **Design Priorities**: The design is built with efficiency, scalability, and fault tolerance in mind. 
-   - **Go as the programming language**: Go was chosen for its lightweight, asynchronous, and efficient nature. It is well-suited for building scalable and performant systems that interact with Kafka, where message consumption and processing can occur concurrently without blocking other operations. Go's simplicity, fast compilation time, and robust concurrency model (goroutines and channels) make it an ideal choice for this type of real-time data pipeline.
-   - **`confluentinc/confluent-kafka-go`**: This library was selected for its minimal configuration, high performance, and strong integration with the Confluent Kafka ecosystem. It provides a reliable, efficient, and straightforward interface for Kafka consumers and producers, making it the most practical choice for this project. Alternatives like `goka`, `kafka-go`, and `Shopify/sarama` could also be used, but `confluent-kafka-go` was chosen due to its direct support for Kafka's native protocol and integration with Kafka.
-   - **Kafka as the backbone of the data pipeline**: Kafka is used for handling high throughput of streaming data. Kafka's partitioning model and fault tolerance through replication provide scalability and reliability, ensuring the system can handle large volumes of data without significant performance degradation.
+### [Apache Kafka Producer](#key_features_producer)
+The Kafka Producer is a Python-based service responsible for generating and sending messages to the `user-login` topic. Its primary role is to simulate a source of login events. Key features include:
 
-### 4. **Fault Tolerance and Scalability**
-   - **Retries**: The consumer implements exponential backoff for retries to avoid overloading the Kafka brokers in case of transient issues.
-   - **Concurrency**: A worker pool is used to process multiple messages concurrently, improving throughput and scalability.
-   - **Graceful Shutdown**: The consumer listens for termination signals (e.g., SIGTERM) and shuts down Kafka connections cleanly, ensuring no data is lost.
+- **Message Generation**: Produces structured login events (e.g., user ID, timestamp, IP address) and sends them to the `user-login` topic.
+- **Third-Party Implementation**: Built using Python's `confluent-kafka` library for efficient and reliable communication with the Kafka broker.
+- **Configuration**: Reads broker settings and topic names from environment variables, ensuring flexibility and ease of deployment.
+- **Integration**: The producer runs as a separate service within the Docker environment, interacting with the Kafka broker to produce messages continuously or at configured intervals.
+
+---
+
+### [Apache Kafka Consumer](#key_features_consumer)
+The Kafka Consumer, implemented in Go, demonstrates the processing and transformation of messages within the streaming pipeline. It performs the following tasks:
+
+- **Message Consumption**: Reads login events from the `user-login` topic.
+- **Validation**: Ensures the messages meet predefined criteria (e.g., valid user IDs, timestamps, and IP addresses). Invalid messages are redirected to the `user-login-dlq` topic.
+- **Processing**: Transforms validated events, such as augmenting them with additional metadata or standardizing their format.
+- **Forwarding**: Publishes processed messages to the `processed-user-login` topic for downstream consumption or analytics.
+- **Error Handling**: Invalid or problematic events are sent to the `user-login-dlq` topic, enabling monitoring and debugging.
+- **Demonstration**: The consumer showcases the complete workflow of data ingestion, validation, processing, and fault tolerance in a real-time streaming pipeline.
+
+---
+
+### [Docker Compose Configuration](#key_features_docker_compose_configuration)
+Docker Compose orchestrates the deployment and integration of all components, creating a cohesive environment for the project. Key highlights include:
+
+- **Service Orchestration**: Docker Compose ensures that Zookeeper, Kafka, the Producer, and the Consumer are deployed and interact seamlessly within the same network.
+- **Environment Variables**: Centralized in a `.env` file, these variables define key configurations like topic names (`user-login`, `processed-user-login`, `user-login-dlq`), broker addresses, and ports.
+- **Networking**: A shared Docker network facilitates communication between services, eliminating the need for manual setup.
+- **Scalability**: Additional consumer or producer instances can be added to handle increased workload, demonstrating the system's scalability.
+
+The setup exemplifies how a real-time streaming pipeline can be deployed and managed using containerization, ensuring consistency, portability, and ease of use.
+Below is example ```docker-compose.yml``` to be used with this project:
+```yaml
+services:
+  zookeeper:
+    container_name: ${PROJECT_NAME}-zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    env_file:
+      - .env
+    ports:
+      - 32181:32181
+      - 2181:2181
+    networks:
+      - kafka-network
+    volumes:
+      - zoo_data:/data
+      - zoo_datalog:/datalog
+    deploy:
+      replicas: 1
+
+  kafka:
+    container_name: ${PROJECT_NAME}-kafka
+    env_file:
+      - .env
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29092:29092
+      - 9092:9092
+    networks:
+      - kafka-network
+    deploy:
+      replicas: 1
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "nc", "-z", "kafka", "9092"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+
+  my-python-producer:
+    container_name: ${PROJECT_NAME}-producer
+    image: mpradeep954/fetch-de-data-gen
+    depends_on:
+      - kafka
+    restart: on-failure:10
+    ports:
+      - 9093:9093
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: user-login
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9093"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+    networks:
+      - kafka-network
+
+  data-consumer:
+    container_name: ${PROJECT_NAME}-consumer
+    env_file:
+      - .env
+    build:
+      context: ./data-consumer
+    depends_on:
+      - kafka
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge
+
+volumes:
+  zoo_data:
+  zoo_datalog:
+
+```
+
 
 
 ## Consumer Documentation <a name="consumer_documentation"></a>
@@ -595,6 +601,7 @@ The entry point of the application, orchestrating the setup and execution of the
 
 ### Consumer Component Features <a name="consumer_component_features"></a>
 
+
 #### 1. **Message Validation and Filtering**
    - **Purpose**: Ensures that each message contains required fields and adheres to a predefined schema.
    - **Fields Checked**: 
@@ -824,104 +831,6 @@ The tests provide comprehensive coverage of the `main.go` file and Kafka consume
 
 
 
-## Architecture Diagram <a name="archietcture_diagram"></a>
-
-![Real-time Streaming Data Pipeline Architecture](./images/architecture_diagram.png)
-
-
-
-### Running the Project Locally <a name="running_locally"></a>
-
-#### Prerequisites
-- **Docker** and **Docker Compose** must be installed. 
-- **Kafka** and **Zookeeper** will be run as Docker containers.
-
-#### Steps to Run the Project
-
-1. Clone this repository:
-   ```bash
-   git clone git@github.com:dmitryro/kafka-pipeline.git data_pipeline 
-   cd data_pipeline
-   ```
-
-2. Build and start the services using Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
-
-   This command will build all the Docker images and start the following services:
-   - **Kafka**: A Kafka broker running on port `9092` (internal) and `29092` (external).
-   - **Zookeeper**: A Zookeeper instance used by Kafka for coordination.
-   - **Producer Service (Python)**: A producer that generates and sends data to Kafka.
-   - **Consumer Service (Go)**: The consumer that processes and publishes data to Kafka topics.
-
-3. After running the above command, the services should be up and running. You can verify this by checking the logs of the consumer:
-   ```bash
-   docker logs pipeline-consumer
-   ```
-
-   You can also use Kafka's `kafka-console-consumer` tool to check the messages in the `processed-user-login` topic:
-   ```bash
-   kafka-console-consumer --bootstrap-server localhost:29092 --topic processed-user-login --from-beginning
-   ```
-
-
-#### Environment Variables
-
-- **LEVEL**: Controls the logging level. Set to `DEBUG` in `.env` for development and `INFO` for production.
-- **KAFKA_LISTENER**: The Kafka broker URL for internal communication (e.g., `kafka:9092`).
-- **KAFKA_BROKER_URL**: The Kafka broker URL for external communication (e.g., `localhost:29092`).
-- **KAFKA_CREATE_TOPICS**: Comma-separated list of Kafka topics to create on startup.
-- **KAFKA_ZOOKEEPER_CONNECT**: Connection string for Zookeeper.
-
-See `.env` for all available environment variables and their descriptions.
-
-#### Sample .env File
-
-```env
-LEVEL=DEBUG
-COMPOSE_HTTP_TIMEOUT=200
-DEV_MODE=1
-PROJECT_NAME=pipeline
-HOST_URL=http://0.0.0.0:80
-NODE_ENV=development
-# KAFKA related configuration
-KAFKA_LISTENER=kafka://kafka:9092
-KAFKA_BROKER_URL=kafka:9092
-KAFKA_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
-KAFKA_ADVERTISED_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
-KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
-KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INTERNAL
-KAFKA_ADVERTISED_HOST_NAME=localhost
-KAFKA_BROKER_ID=1
-KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-KAFKA_CREATE_TOPICS="ship-topic:1:1,user-login:1:1,processed-user-login:1:1"
-KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-KAFKA_DEFAULT_REPLICATION_FACTOR=1
-KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
-KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
-ALLOW_ANONYMOUS_LOGIN=yes
-ALLOW_PLAINTEXT_LISTENER=yes
-#ZOO KEEPER
-ZOOKEEPER_CLIENT_PORT=2181
-ZOOKEEPER_TICK_TIME=2000
-ZOO_MY_ID=1
-ZOO_PORT=2181
-ZOO_SERVERS="server.1=zookeeper:2888:3888"
-# Kafka Consumer configuration
-KAFKA_CONSUMER_GROUP=user-group
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-KAFKA_BOOTSTRAP_HOST=kafka
-KAFKA_BOOTSTRAP_PORT=9092
-KAFKA_ENABLE_AUTO_COMMT=false
-KAFKA_RETRY_LIMIT=3
-KAFKA_SOCKET_TIMEOUT=30000
-KAFKA_SESSION_TIMEOUT=30000
-KAFKA_AUTO_OFFSET_RESET=latest
-KAFKA_INPUT_TOPIC=user-login
-KAFKA_OUTPUT_TOPIC=processed-user-login
-KAFKA_DLQ_TOPIC=user-login-dlq
-```
 
 ## Production Readiness <a name="production_readiness"></a>
 
@@ -1015,10 +924,105 @@ To ensure the application is production-ready, consider adding the following com
 
 
 
+
+
+
 ## Project Deployment <a name="project_deployment"></a>
 
+### Running the Project Locally <a name="project_deployment_running_locally"></a>
 
-### Production Deployment Steps <a name="production_deployment_steps"></a>
+#### Prerequisites
+- **Docker** and **Docker Compose** must be installed. 
+- **Kafka** and **Zookeeper** will be run as Docker containers.
+
+#### Steps to Run the Project
+
+1. Clone this repository:
+   ```bash
+   git clone git@github.com:dmitryro/kafka-pipeline.git data_pipeline 
+   cd data_pipeline
+   ```
+
+2. Build and start the services using Docker Compose:
+   ```bash
+   docker-compose up --build
+   ```
+
+   This command will build all the Docker images and start the following services:
+   - **Kafka**: A Kafka broker running on port `9092` (internal) and `29092` (external).
+   - **Zookeeper**: A Zookeeper instance used by Kafka for coordination.
+   - **Producer Service (Python)**: A producer that generates and sends data to Kafka.
+   - **Consumer Service (Go)**: The consumer that processes and publishes data to Kafka topics.
+
+3. After running the above command, the services should be up and running. You can verify this by checking the logs of the consumer:
+   ```bash
+   docker logs pipeline-consumer
+   ```
+
+   You can also use Kafka's `kafka-console-consumer` tool to check the messages in the `processed-user-login` topic:
+   ```bash
+   kafka-console-consumer --bootstrap-server localhost:29092 --topic processed-user-login --from-beginning
+   ```
+
+
+#### Environment Variables
+
+- **LEVEL**: Controls the logging level. Set to `DEBUG` in `.env` for development and `INFO` for production.
+- **KAFKA_LISTENER**: The Kafka broker URL for internal communication (e.g., `kafka:9092`).
+- **KAFKA_BROKER_URL**: The Kafka broker URL for external communication (e.g., `localhost:29092`).
+- **KAFKA_CREATE_TOPICS**: Comma-separated list of Kafka topics to create on startup.
+- **KAFKA_ZOOKEEPER_CONNECT**: Connection string for Zookeeper.
+
+See `.env` for all available environment variables and their descriptions.
+
+#### Sample .env File
+
+```env
+LEVEL=DEBUG
+COMPOSE_HTTP_TIMEOUT=200
+DEV_MODE=1
+PROJECT_NAME=pipeline
+HOST_URL=http://0.0.0.0:80
+NODE_ENV=development
+# KAFKA related configuration
+KAFKA_LISTENER=kafka://kafka:9092
+KAFKA_BROKER_URL=kafka:9092
+KAFKA_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
+KAFKA_ADVERTISED_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
+KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INTERNAL
+KAFKA_ADVERTISED_HOST_NAME=localhost
+KAFKA_BROKER_ID=1
+KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+KAFKA_CREATE_TOPICS="ship-topic:1:1,user-login:1:1,processed-user-login:1:1"
+KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+KAFKA_DEFAULT_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+ALLOW_ANONYMOUS_LOGIN=yes
+ALLOW_PLAINTEXT_LISTENER=yes
+#ZOO KEEPER
+ZOOKEEPER_CLIENT_PORT=2181
+ZOOKEEPER_TICK_TIME=2000
+ZOO_MY_ID=1
+ZOO_PORT=2181
+ZOO_SERVERS="server.1=zookeeper:2888:3888"
+# Kafka Consumer configuration
+KAFKA_CONSUMER_GROUP=user-group
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+KAFKA_BOOTSTRAP_HOST=kafka
+KAFKA_BOOTSTRAP_PORT=9092
+KAFKA_ENABLE_AUTO_COMMT=false
+KAFKA_RETRY_LIMIT=3
+KAFKA_SOCKET_TIMEOUT=30000
+KAFKA_SESSION_TIMEOUT=30000
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_INPUT_TOPIC=user-login
+KAFKA_OUTPUT_TOPIC=processed-user-login
+KAFKA_DLQ_TOPIC=user-login-dlq
+```
+
+### Production Deployment Steps <a name="project_deployment_production_deployment_steps"></a>
 
 To deploy this application in production, follow these steps:
 
@@ -1056,10 +1060,13 @@ To deploy this application in production, follow these steps:
    - Perform periodic recovery drills to validate backup integrity.
 
 
-### Deploying In The Cloud <a name="deploying_in_the_cloud"></a>
+### Deploying In The Cloud <a name="project_deployment_deploying_in_the_cloud"></a>
 
 
-### Deployment Commands<a name="deployment_commands"></a>
+### Deploying in Non-Cloud Environments <a name="project_deployment_deploying_in_non_cloud"></a>
+
+
+### Deployment Commands<a name="project_deployment_deployment_commands"></a>
    1. **Build Docker Images:**
    ```bash
    docker build -t kafka-consumer:latest ./consumer
@@ -1085,85 +1092,327 @@ To deploy this application in production, follow these steps:
    kubectl logs -f <pod-name>
    ```
 
-### Kubernetes and Container Orchestration <a name="production_kubernetes_orchestration"></a>
+### Kubernetes and Container Orchestration <a name="project_deployment_kubernetes_orchestration"></a>
 
-### Logging and Alerging <a name="logging_and_alerging"></a>
+
+
+### Logging and Alerging <a name="project_deployment_logging_and_alerging"></a>
+
+# Logging and Alerting
+
+Logging and alerting are essential components in a distributed system, allowing you to monitor application behavior and diagnose issues. This section provides guidelines on setting up logging levels, integrating logging services within AWS, GCP, Azure, and using Prometheus, Grafana, or ELK for monitoring and alerting.
+
+## 1. Log Levels
+
+Log levels define the verbosity of logs. You can configure your application to log different levels of information based on the environment and severity of the event.
+
+### Common Log Levels:
+- **DEBUG**: Verbose logs useful for debugging in development.
+- **INFO**: General operational messages that convey the state of the system.
+- **WARN**: Warnings for events that might not be errors but could be potential issues.
+- **ERROR**: For issues that could impact functionality or require attention.
+- **FATAL**: Critical errors indicating the application is unable to continue.
+
+### Example of Log Level Configuration:
+
+```env
+LOG_LEVEL=INFO
+```
+
+In a production environment, you might configure the log level to `ERROR` to minimize unnecessary log output, while in a development environment, you might set it to `DEBUG`.
+
+## 2. Integration with Cloud Services (AWS, GCP, Azure)
+
+Many cloud providers offer centralized logging services. Below are configurations for logging services within AWS, GCP, and Azure.
+
+### AWS: CloudWatch Logs
+
+You can send application logs to AWS CloudWatch for centralized monitoring.
+
+```env
+LOGGING_SERVICE=cloudwatch
+CLOUDWATCH_LOG_GROUP=my-log-group
+CLOUDWATCH_LOG_STREAM=my-log-stream
+```
+
+### GCP: Stackdriver Logging
+
+In Google Cloud Platform (GCP), logs can be sent to Stackdriver.
+
+```env
+LOGGING_SERVICE=stackdriver
+GCP_PROJECT_ID=my-gcp-project
+STACKDRIVER_LOG_NAME=my-log-name
+```
+
+### Azure: Azure Monitor Logs
+
+For Azure, logs can be forwarded to Azure Monitor.
+
+```env
+LOGGING_SERVICE=azure_monitor
+AZURE_MONITOR_LOG_NAME=my-log-name
+```
+
+## 3. Prometheus and Grafana for Monitoring and Alerts
+
+Prometheus and Grafana are commonly used together for monitoring system metrics and setting up alerts based on thresholds.
+
+### Prometheus Alert Configuration Example:
+
+Create alerting rules in Prometheus to notify when certain conditions are met, such as an error rate exceeding a threshold.
+
+```yaml
+groups:
+  - name: example-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: http_requests_total{status="500"} > 5
+        for: 1m
+        labels:
+          severity: "critical"
+        annotations:
+          summary: "High error rate detected"
+```
+
+### Grafana Alerts Configuration:
+
+Set up alerting directly within Grafana for real-time notifications.
+
+1. Open your Grafana dashboard.
+2. In the panel settings, go to the "Alert" tab.
+3. Define the alert condition (e.g., error rate exceeds a certain value).
+4. Set notification channels like email, Slack, or webhooks.
+
+## 4. Configuration Changes for Logging and Alerting
+
+For dynamic logging configurations, it’s essential to manage environment variables or configuration files such as `.env` to adjust log levels, integrate logging services, and define alert thresholds. Below are guidelines on how to configure logging and alerting behavior for various use cases.
+
+### **1. Environment Variables for Logging Configuration**
+
+To configure logging behavior dynamically without changing code, environment variables can be used to modify log levels, enable remote logging services, and manage alert thresholds.
+
+#### **Set Log Level**
+
+The log level controls the verbosity of logs, allowing you to specify how much detail you want to capture. You can set different log levels for different environments (e.g., `DEBUG` for development and `ERROR` for production).
+
+- **In your `.env` file**:
+  ```env
+  LOG_LEVEL=DEBUG  # Options: DEBUG, INFO, WARN, ERROR, FATAL
+  ```
+
+- **Example configuration**:
+  - `DEBUG`: Verbose logging for detailed insights during development.
+  - `INFO`: General operational messages, useful for tracking normal application flow.
+  - `WARN`: For unexpected behavior that doesn’t immediately impact functionality.
+  - `ERROR`: Indicates issues that may affect application performance or data integrity.
+  - `FATAL/CRITICAL`: Critical failures requiring immediate attention.
+
+#### **Enable Remote Logging**
+
+For production environments, it's a best practice to forward logs to a centralized logging service like CloudWatch (AWS), Stackdriver (GCP), or Azure Monitor, or to an external service like ELK (Elasticsearch, Logstash, Kibana).
+
+- **Example for CloudWatch (AWS)**:
+  ```env
+  LOGGING_SERVICE=cloudwatch
+  CLOUDWATCH_LOG_GROUP=my-log-group
+  CLOUDWATCH_LOG_STREAM=my-log-stream
+  ```
+
+- **Example for Stackdriver (GCP)**:
+  ```env
+  LOGGING_SERVICE=stackdriver
+  GCP_PROJECT_ID=my-gcp-project
+  STACKDRIVER_LOG_NAME=my-log-name
+  ```
+
+- **Example for ELK (Elasticsearch, Logstash, Kibana)**:
+  ```env
+  LOGGING_SERVICE=elk
+  ELASTICSEARCH_URL=http://elasticsearch:9200
+  LOG_INDEX=my-log-index
+  ```
+
+#### **Set Log File Location**
+
+In some cases, logs are stored locally before being pushed to centralized services. You can configure where logs are stored, such as in `/var/log` or custom directories.
+
+- **Example in `.env`**:
+  ```env
+  LOG_FILE_PATH=/var/log/myapp/application.log
+  ```
+
+### **2. Configure Alerts for Logging**
+
+Alerts are vital for notifying you when something goes wrong in your application, such as a spike in error rates or an unhandled exception. Alerts can be configured based on log content or application performance metrics.
+
+#### **Set Alert Thresholds**
+
+Alerts are often tied to log patterns or metrics, such as error rates, response times, or other critical application events. You can use environment variables to specify thresholds for these events.
+
+- **Example for error rate threshold**:
+  ```env
+  ALERT_ERROR_RATE=5  # Trigger an alert if error rate exceeds 5%
+  ```
+
+- **Example for response latency threshold**:
+  ```env
+  ALERT_LATENCY_THRESHOLD=500ms  # Trigger an alert if response latency exceeds 500ms
+  ```
+
+#### **Prometheus Alerts**
+
+For Prometheus, you can set up alerting rules within your configuration file, which define the conditions under which an alert should be triggered.
+
+- **Example Prometheus alerting rule**:
+  ```yaml
+  groups:
+    - name: example-alerts
+      rules:
+        - alert: HighErrorRate
+          expr: http_requests_total{status="500"} > 5
+          for: 1m
+          labels:
+            severity: "critical"
+          annotations:
+            summary: "High error rate detected"
+  ```
+
+#### **Cloud Watch Alarms (AWS)**
+
+In AWS, you can configure **CloudWatch Alarms** based on metrics or log patterns to trigger alerts when certain thresholds are exceeded.
+
+- **Example CloudWatch Alarm Configuration**:
+  - Create an alarm that triggers when the error rate in logs exceeds a specified value:
+    ```bash
+    aws cloudwatch put-metric-alarm --alarm-name "HighErrorRate" --metric-name "Errors" --namespace "AWS/Logs" --statistic "Sum" --period 300 --threshold 5 --comparison-operator "GreaterThanThreshold" --evaluation-periods 1 --alarm-actions arn:aws:sns:region:account-id:alarm-topic
+    ```
+
+#### **Grafana Alerts**
+
+In **Grafana**, you can set up alerts on any metric visualized in your dashboards. Grafana can notify you through various channels such as email, Slack, or webhook when an alert is triggered.
+
+- **Example Grafana alerting setup**:
+  - Set up an alert on a metric (e.g., error rate):
+    - Navigate to the panel settings in Grafana.
+    - Under the "Alert" tab, define the condition to trigger an alert, such as "if the error rate exceeds 5% for 5 minutes".
+    - Set notification channels (email, Slack, etc.) to receive the alert.
+
+### **3. Dynamic Configuration Management**
+
+For production systems, it’s crucial to adjust configurations without modifying code. Tools like **Ansible**, **Terraform**, or even Kubernetes ConfigMaps can manage environment variables and configurations dynamically.
+
+#### **Example with Terraform**
+
+With Terraform, you can manage configuration settings as part of your infrastructure as code, ensuring that settings like log levels, log service configurations, and alert thresholds are set up consistently across environments.
+
+- **Example Terraform configuration for setting environment variables**:
+  ```hcl
+  resource "aws_secretsmanager_secret" "myapp_logs" {
+    name = "myapp-logs"
+    secret_string = jsonencode({
+      LOG_LEVEL = "INFO"
+      ALERT_ERROR_RATE = 5
+      LOGGING_SERVICE = "cloudwatch"
+    })
+  }
+  ```
+
+#### **Example with Ansible**
+
+Ansible can be used to deploy configuration changes to remote systems, ensuring that your applications are using the correct logging configurations. Ansible tasks can set environment variables in the `.env` file or configure logging services.
+
+- **Example Ansible playbook**:
+  ```yaml
+  - name: Set logging configuration
+    hosts: all
+    tasks:
+      - name: Set environment variables
+        lineinfile:
+          path: "/path/to/.env"
+          line: "LOG_LEVEL=DEBUG"
+          create: yes
+      - name: Restart application for changes to take effect
+        systemd:
+          name: myapp
+          state: restarted
+  ```
+
+---
+
+### **Conclusion**
+
+By using configuration files like `.env`, or leveraging automation tools such as **Terraform** and **Ansible**, you can dynamically manage logging and alerting configurations to ensure flexibility and scalability. Centralized logging services (CloudWatch, Stackdriver, ELK) and alerting systems (Prometheus, Grafana) enable proactive monitoring of system performance, which helps ensure that your application is running smoothly and that issues are detected early.
+
 
 
 ## Security and Compliance <a name="security_and_compliance"></a>
-#### **IAM Roles for Kafka**
 
-Cloud-based Kafka services like Amazon MSK (Managed Streaming for Apache Kafka) and Confluent Cloud rely on Identity and Access Management (IAM) roles for securing access to Kafka resources. IAM roles are used to authenticate and authorize clients, services, and applications interacting with Kafka clusters.
+Ensuring security and compliance is crucial for any software deployment, especially when dealing with sensitive data or operating in regulated industries. In this project, various security measures, best practices, and compliance frameworks have been considered to safeguard data, infrastructure, and processes. This section outlines the key security considerations, compliance requirements, and practices to follow in order to maintain a safe environment for your system.
 
-##### **Amazon MSK IAM Roles**
+### Security Considerations <a name="security_and_compliance_security_considerations"></a>
 
-In MSK, IAM roles are used to control access to your Kafka brokers and Kafka data within AWS. You can use IAM roles to:
+When deploying systems that handle sensitive data or run in a production environment, there are several important security considerations to keep in mind:
 
-- **Grant permissions to clients:** Through the use of IAM policies, you can control which users, roles, or services can produce, consume, or administer Kafka topics.
-- **Authenticate clients:** MSK supports **IAM authentication** for producers and consumers to securely connect to Kafka brokers. IAM roles can be assigned to EC2 instances or services like AWS Lambda to authenticate without using traditional usernames and passwords.
-- **Access Control:** Policies can be attached to IAM roles, controlling access based on Kafka resources like topics and consumer groups.
+- **Authentication and Authorization**: Utilize modern authentication mechanisms like OAuth2, OpenID Connect, and SSO (Single Sign-On). Integrate with identity providers like AWS Cognito, Azure AD, or Okta to manage user identities and ensure that only authorized users can access the system.
 
-IAM roles for MSK are managed through AWS Identity and Access Management (IAM), and the appropriate permissions must be granted to allow the Kafka client applications to interact with MSK clusters.
+- **Encryption**: Ensure that data is encrypted both in transit and at rest. Use TLS (Transport Layer Security) for encrypting communication between services, including Kafka producers and consumers. Additionally, encrypt sensitive data stored in databases, S3 buckets, or other storage solutions using managed services like **AWS KMS (Key Management Service)**, **Google Cloud KMS**, or **Azure Key Vault** to manage encryption keys.
 
-##### Example: IAM Policy for MSK Consumer
+- **Access Controls and Secrets Management**: Implement granular access controls to limit access to sensitive information and system resources. Use **AWS IAM (Identity and Access Management)**, **Azure RBAC (Role-Based Access Control)**, or **GCP IAM** to manage user permissions for accessing cloud resources. For secrets management, use tools like **AWS Secrets Manager**, **GCP Secret Manager**, **Azure Key Vault**, or **HashiCorp Vault** to securely store and retrieve sensitive data like API keys, database credentials, and encryption keys.
 
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "kafka:DescribeCluster",
-                "kafka:DescribeTopic",
-                "kafka:ListTopics",
-                "kafka:GetRecords",
-                "kafka:Consume"
-            ],
-            "Resource": "arn:aws:kafka:region:account-id:cluster/cluster-name/*"
-        }
-    ]
-}
-```
+- **Container Security**: Docker and Kubernetes environments should be configured to run with the principle of least privilege. Use **Docker Content Trust** to ensure that only signed and trusted images are used. Kubernetes RBAC should be applied to control access to Kubernetes resources, ensuring only authorized users can interact with the Kubernetes API and control plane. In production environments, consider using tools like **Falco** or **Aqua Security** for real-time container security monitoring.
 
-#### Confluent Cloud IAM Roles
+- **Network Security**: Ensure network communication is secure using network policies, firewalls, and encryption. In Kubernetes, implement **network segmentation** and enforce traffic control using **Calico** or **Cilium**. Ensure that internal services like Kafka, Zookeeper, and Prometheus are isolated and only accessible to authorized services.
 
-Confluent Cloud provides a robust IAM (Identity and Access Management) system to control access to Kafka resources. It integrates with cloud-native IAM systems like AWS IAM, Google Cloud IAM, and Azure AD to enable seamless and secure access control. With Confluent Cloud, you can define fine-grained permissions for managing Kafka clusters, topics, consumer groups, and other resources.
+- **Audit Logging and Monitoring**: Enable audit logging for all user actions and system changes. Use **AWS CloudTrail**, **GCP Cloud Audit Logs**, or **Azure Activity Logs** to record API calls and user actions for auditing purposes. Implement centralized monitoring with **Prometheus** and **Grafana**, and use SIEM (Security Information and Event Management) systems like **Datadog** or **Splunk** to track and alert on suspicious activities.
 
-##### **Key IAM Roles in Confluent Cloud**
+### SOC 2 Compliance <a name="security_and_compliance_soc_2"></a>
 
-- **Administrator**: Full access to all resources and configurations within the Confluent Cloud environment. This role can manage Kafka clusters, create and delete topics, and manage IAM policies.
-  
-- **Kafka Cluster Admin**: Can create and manage Kafka clusters, configure brokers, and manage topic configurations. However, they do not have access to non-Kafka services like connectors, schemas, or user management.
-  
-- **Developer**: Can produce and consume messages to/from Kafka topics and create topics, but has limited access to administrative functionalities. Developers typically focus on managing their specific applications.
-  
-- **Viewer**: Can only view the configuration of Kafka resources, including topic details, consumer groups, and cluster configurations. This role does not allow any changes or access to message data.
-  
-- **Schema Registry Admin**: Can manage schemas within the Schema Registry but does not have access to Kafka cluster or other non-schema resources.
+SOC 2 compliance is essential for SaaS applications that store or process customer data, particularly in industries that require strong data protection practices. The following considerations should be implemented to achieve and maintain SOC 2 compliance:
 
-##### **Assigning IAM Roles in Confluent Cloud**
+- **Data Security**: Ensure that all sensitive data is encrypted at rest and in transit. For cloud resources, enforce the use of **AWS KMS**, **Google Cloud KMS**, or **Azure Key Vault** to protect sensitive data. Employ fine-grained **IAM policies** across AWS, GCP, or Azure to ensure that only authorized personnel have access to critical systems.
 
-IAM roles are assigned at different levels, including:
+- **Monitoring and Logging**: Implement logging for all critical activities, including access to sensitive data, changes in cloud infrastructure, and application usage. Use **AWS CloudWatch**, **GCP Stackdriver**, or **Azure Monitor** to track performance, security events, and resource usage. Maintain detailed audit logs and enable alerts for abnormal activities like failed login attempts or access to restricted resources.
 
-- **Organization level**: Users can be assigned roles that give access to all resources within the Confluent Cloud organization.
-- **Cluster level**: Roles can be restricted to a specific Kafka cluster or specific topics within that cluster.
-- **Topic level**: Fine-grained access can be applied, such as allowing a user to only produce messages to a specific topic.
+- **Incident Response**: Establish a clear and actionable incident response plan. Automate alerts for any suspicious activity, such as unauthorized access or potential data breaches. In case of an incident, use tools like **AWS GuardDuty**, **Azure Sentinel**, or **GCP Security Command Center** to detect, investigate, and respond to security threats.
 
-Roles are assigned through the Confluent Cloud UI or via the API by the administrator.
+- **Data Integrity and Availability**: Implement data backup and disaster recovery strategies. Use **AWS S3** versioning and backups for critical data, and ensure **cross-region replication** is enabled. Implement multi-region deployments where necessary to ensure high availability and fault tolerance. Use managed database services such as **Amazon RDS** or **Google Cloud SQL** to automatically back up and replicate data for disaster recovery.
 
-##### **Best Practices for IAM Role Management in Confluent Cloud**
+- **RBAC and Least Privilege**: In Kubernetes and cloud environments, apply **RBAC** (Role-Based Access Control) to ensure users and services have only the minimum required permissions. In AWS, **IAM roles and policies** should be configured to limit access based on job responsibilities. Use **Azure Active Directory (Azure AD)** and **GCP IAM** to manage access to cloud resources in a similar manner.
 
-- **Principle of Least Privilege**: Always assign the least amount of privilege necessary to perform the required tasks. For example, a developer should not be granted administrator permissions unless absolutely necessary.
-- **Use Role-based Access Control (RBAC)**: RBAC allows administrators to define roles with specific permissions for different users or services within the organization.
-- **Monitor Role Assignments**: Regularly review and audit IAM roles to ensure that only authorized users and services have access to sensitive Kafka resources.
-- **Use Multi-Factor Authentication (MFA)**: Enhance security by enabling MFA for users with elevated IAM roles, such as administrators.
+### Other Compliance Considerations <a name="security_and_compliance_other_considerations"></a>
 
+In addition to SOC 2, there are several other compliance frameworks that may be applicable, depending on the nature of the business:
+
+- **HIPAA (Health Insurance Portability and Accountability Act)**: If handling healthcare-related data, ensure that the system is configured to meet HIPAA compliance by using **encrypted communication** (TLS), controlling access to health records, and maintaining **audit logs** of all user activity.
+
+- **GDPR (General Data Protection Regulation)**: For businesses that operate in the EU or handle data from EU citizens, ensure that personal data is collected and stored in compliance with GDPR. Implement **data minimization**, allow users to **request access or deletion of their data**, and use **data encryption** both at rest and in transit.
+
+- **PCI DSS (Payment Card Industry Data Security Standard)**: If handling payment card information, ensure the system complies with PCI DSS by implementing **strong encryption**, controlling access to payment systems, and regularly testing the security of your infrastructure.
+
+- **ISO/IEC 27001**: If ISO/IEC 27001 certification is required, implement a comprehensive Information Security Management System (ISMS). Regularly audit and review the policies, procedures, and controls in place to ensure that sensitive information is protected.
+
+### Best Practices <a name="security_and_compliance_best_practices"></a>
+
+Here are best practices to help you maintain a secure and compliant environment:
+
+- **Regular Audits and Penetration Testing**: Perform regular security audits and penetration tests to identify vulnerabilities in your infrastructure and application. This includes checking for misconfigurations, vulnerabilities in third-party libraries, and ensuring that security controls are being followed.
+
+- **Infrastructure as Code (IaC)**: Use IaC tools such as **Terraform**, **CloudFormation**, or **Pulumi** to automate the deployment of infrastructure. Ensure that your IaC templates are reviewed for security misconfigurations before deployment. Consider using **Checkov** or **Terraform Cloud** to scan for vulnerabilities in your infrastructure code.
+
+- **Immutable Infrastructure**: Treat infrastructure as immutable by creating automated deployments where containers, virtual machines, and configurations are replaced rather than updated. This approach ensures consistency and reduces the chances of configuration drift.
+
+- **Environment Segmentation**: Always maintain separate environments for **development**, **staging**, and **production**. Enforce access controls to ensure that only authorized personnel can access production resources.
+
+- **Least Privilege Access**: Always adhere to the principle of least privilege by granting users and services only the minimum permissions necessary. Use **AWS IAM**, **Azure RBAC**, and **GCP IAM** to enforce these policies across cloud resources.
+
+- **Continuous Compliance Automation**: Automate compliance checks using tools like **AWS Config**, **Open Policy Agent (OPA)**, or **Kubernetes Gatekeeper** to continuously enforce policies and ensure that your infrastructure remains compliant with relevant regulations.
+
+By adhering to these best practices and ensuring compliance with relevant frameworks, you can safeguard your application and infrastructure from security threats and avoid costly compliance violations.
 
 
 
 ## Scalability <a name="scalability"></a>
-
 Scaling Kafka effectively is critical for ensuring that your system can handle high throughput and meet performance requirements. This section explores best practices and strategies for scaling Kafka in various environments, whether you're using Kubernetes, cloud services (AWS, GCP, Azure), or a traditional, non-cloud approach.
 
 
@@ -1731,8 +1980,10 @@ If you encounter issues while running the project, here are some common problems
 
 For additional support, please refer to the official Kafka documentation or open an issue on the GitHub repository.
 
+
 ## Conclusion <a name="conclusion"></a> 
 This solution provides a scalable, fault-tolerant real-time data pipeline using Kafka, Docker, and Go. The design ensures efficient message processing with a consumer that can handle retries and handle errors through the Dead Letter Queue. This setup can be easily deployed in production environments with Kubernetes and monitored using tools like Prometheus and Grafana.
 
 For any questions or support, feel free to open an issue on the repository.
-Ad-skipping activated
+
+
