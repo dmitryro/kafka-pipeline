@@ -8,9 +8,10 @@
 * **[Key Components and Features](#key_features)**
     * [Apache Zookeeper](#key_features_apache_zookeeper)
     * [Apache Kafka](#key_features_apache_kafka)
-    * [Apache Kafka Producer](#key_features_producer)
-    * [Apache Kafka Consumer](#key_features_consumer)
-    * [Docker Compose Configuraton](#key_features_docker_configuration)
+    * [Apache Kafka Producer](#key_features_kafka_producer)
+    * [Apache Kafka Consumer](#key_features_kafka_consumer)
+    * [Docker Compose Configuraton](#key_features_docker_compose_configuration)
+
 
 
 * **[Consumer](#consumer_documentation)**
@@ -75,7 +76,7 @@ All the necessary environment variables are provided in ```.env``` file that is 
 
 ## Key Components and Features <a name="key_features"></a>
 
-### [Apache Zookeeper](#key_features_apache_zookeeper)
+### Apache Zookeeper <a name="key_features_apache_zookeeper"></a>
 Apache Zookeeper is a distributed coordination service essential for managing the state and configuration of distributed systems like Apache Kafka. In this project:
 
 - **Role in Kafka**: Zookeeper coordinates and maintains metadata for Kafka brokers, topics, and partitions. It ensures leader election for partitions and keeps track of broker status.
@@ -84,7 +85,7 @@ Apache Zookeeper is a distributed coordination service essential for managing th
 
 ---
 
-### [Apache Kafka](#key_features_apache_kafka)
+### Apache Kafka <a name="key_features_apache_kafka"><a/>
 Apache Kafka is a distributed streaming platform that serves as the core messaging system for this project. It allows applications to publish and consume streams of records in real-time. Key details include:
 
 - **Message Broker**: Kafka acts as a central hub where the producer sends messages to specific topics, and consumers subscribe to those topics to process the data.
@@ -98,7 +99,7 @@ Apache Kafka is a distributed streaming platform that serves as the core messagi
 
 ---
 
-### [Apache Kafka Producer](#key_features_producer)
+### Apache Kafka Producer <a name="key_features_producer"></a>
 The Kafka Producer is a Python-based service responsible for generating and sending messages to the `user-login` topic. Its primary role is to simulate a source of login events. Key features include:
 
 - **Message Generation**: Produces structured login events (e.g., user ID, timestamp, IP address) and sends them to the `user-login` topic.
@@ -108,7 +109,7 @@ The Kafka Producer is a Python-based service responsible for generating and send
 
 ---
 
-### [Apache Kafka Consumer](#key_features_consumer)
+### Apache Kafka Consumer <a name="key_features_consumer"></a>
 The Kafka Consumer, implemented in Go, demonstrates the processing and transformation of messages within the streaming pipeline. It performs the following tasks:
 
 - **Message Consumption**: Reads login events from the `user-login` topic.
@@ -120,7 +121,7 @@ The Kafka Consumer, implemented in Go, demonstrates the processing and transform
 
 ---
 
-### [Docker Compose Configuration](#key_features_docker_compose_configuration)
+### Docker Compose Configuration <a name="key_features_docker_compose_configuration"></a>
 Docker Compose orchestrates the deployment and integration of all components, creating a cohesive environment for the project. Key highlights include:
 
 - **Service Orchestration**: Docker Compose ensures that Zookeeper, Kafka, the Producer, and the Consumer are deployed and interact seamlessly within the same network.
