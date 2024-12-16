@@ -12,13 +12,11 @@
     * [Apache Kafka Consumer](#key_features_kafka_consumer)
     * [Docker Compose Configuraton](#key_features_docker_compose_configuration)
 
-
-
 * **[Consumer](#consumer_documentation)**
     * [Consumer Overview](#consumer_documentation_overview)
     * [Consumer Design Choices](#consumer_documentation_design_choices)
     * [Consumer Flow](#consumer_documentation_flow)
-    * [Consumer Features](#consumer_component_features)
+    * [Consumer Features](#consumer_documentation_component_features)
     * [Consumer Implementation](#consumer_documentation_implementation)
     * [Consumer Environment Configuraton](#consumer_documentation_environment_configuration)
     * [Consumer Docker Configuraton](#consumer_documentation_docker_configuration)
@@ -226,7 +224,7 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
 
 
 
-### Consumer Implementation <a name="consumer_implementation"></a>
+### Consumer Implementation <a name="consumer_documentation_implementation"></a>
 
 #### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
@@ -600,7 +598,7 @@ The entry point of the application, orchestrating the setup and execution of the
 
 
 
-### Consumer Component Features <a name="consumer_component_features"></a>
+### Consumer Component Features <a name="consumer_documentation_component_features"></a>
 
 
 #### 1. **Message Validation and Filtering**
@@ -670,7 +668,7 @@ The entry point of the application, orchestrating the setup and execution of the
 4. **Forward Valid Message**: Valid messages are forwarded to the `processed-user-login` topic.
 5. **Graceful Shutdown**: Upon receiving a shutdown signal, the consumer gracefully finishes processing messages and exits.
 
-### Consumer Environment Configuration <a name="consumer_environment_configuration"></a>
+### Consumer Environment Configuration <a name="consumer_documentation_environment_configuration"></a>
 
 The consumer is configured via the `.env` file and can be customized with the following parameters:
 
@@ -688,7 +686,7 @@ The consumer is configured via the `.env` file and can be customized with the fo
 - `KAFKA_ENABLE_AUTO_COMMIT`: Autocommit can be set to true or false,
 
 
-### Consumer Docker Configuration <a name="consumer_docker_configuration"></a>
+### Consumer Docker Configuration <a name="consumer_documentation_docker_configuration"></a>
 
 The consumer is containerized using Docker. Below is the `Dockerfile` and `docker-compose.yml` used for the consumer service.
 
@@ -732,9 +730,6 @@ services:
     networks:
       - kafka-network
 ```
-
-
-### Consumer Logging and Monitoring <a name="consumer_logging_and_monitoring"></a>
 
 
 ### Consumer Directory Layout <a name="consumer_documentation_directory_layout"></a>
