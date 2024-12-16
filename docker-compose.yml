@@ -30,7 +30,7 @@ services:
     depends_on:
       - zookeeper
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      test: ["CMD", "nc", "-z", "kafka", "9092"]
       interval: 10s
       retries: 5
       timeout: 5s
@@ -47,6 +47,12 @@ services:
     environment:
       BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: user-login
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9093"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
     networks:
       - kafka-network
 
