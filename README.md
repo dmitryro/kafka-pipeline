@@ -1,4 +1,3 @@
-(base) ➜  kafka-pipeline git:(main) ✗ cat README.md 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -23,6 +22,14 @@
     * [Consumer Overview](#consumer_documentation_overview)
     * [Consumer Design Choices](#consumer_documentation_design_choices)
     * [Consumer Component Features](#consumer_component_features)
+        * [Kafka Consumer & Producer Integration](#key_features_kafka_consumer_and_producer_itegration)
+        * [Message Processing & Validation](#key_features_message_processing_and_validation)
+        * [Retry Logic for Kafka Message Publishing](#key_features_retry_logic_for_kafka_message_publishing)
+        * [Prometheus Metrics for Monitoring](#key_features_prometheus_metrics_for_monitoring)
+        * [Graceful Shutdown](#key_features_graceful_shutdown)
+        * [Worker Pool for Concurrent Message Processing](#key_features_worker_pool_for_concurrent_message_processing)
+        * [Private IP Filtering](#key_features_private_ip_filtering)
+        * [Dead Letter Queue (DLQ)](#key_features_dead_letter_queue)
     * [Consumer Flow](#consumer_flow)
     * [Consumer Environment Configuraton](#consumer_environment_configuration)
     * [Consumer Docker Configuraton](#consumer_docker_configuration)
