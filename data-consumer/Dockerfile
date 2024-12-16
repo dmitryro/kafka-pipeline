@@ -39,9 +39,5 @@ RUN chmod +x /usr/local/bin/healthcheck.sh
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
   CMD /usr/local/bin/healthcheck.sh || exit 1
 
-# Add debugging to check if app is running - optional debugging script.
-# (Uncomment for debugging purposes)
-#CMD ["sh", "-c", "echo 'Consumer container started' && ./data-consumer"]
-
-# Ensure the Go application logs to stdout and stderr (in case of debugging comment out this and uncomment the above to add healthchecks).
+# Ensure the Go application logs to stdout and stderr
 CMD ["./data-consumer"]
