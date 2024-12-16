@@ -33,8 +33,8 @@
     * [Consumer Production Notes](#consumer_documentation_production_notes)
 
 * **[Production Readiness](#production_readiness)**
-    * [Common Steps](#producton_readiness_common_steps)
-    * [Enhancements](#producton_readiness_enhancements)
+    * [Producton Readiness - Common Steps](#production_readiness_common_steps)
+    * [Production Readiness - Enhancements](#production_readiness_enhancements)
 
 * **[Project Deployment](#project_deployment)**
     * [Running the Project Locally](#running_locally)
@@ -918,7 +918,7 @@ KAFKA_DLQ_TOPIC=user-login-dlq
 
 ## Production Readiness <a name="production_readiness"></a>
 
-### Producton Readiness Common Steps  <a name="production_readiness_common_steps"></a>
+### Producton Readiness - Common Steps  <a name="production_readiness_common_steps"></a>
 #### 1. **Deployment to Kubernetes**
    - The solution can be deployed to **Kubernetes** for managing and scaling services in production. Kubernetes helps in automating the deployment, scaling, and management of containerized applications.
    - **Helm** can be used for easy configuration management and deployment of the system. Helm charts simplify the deployment process by packaging Kubernetes resources like deployments, services, and persistent volumes into reusable templates.
@@ -972,6 +972,40 @@ KAFKA_DLQ_TOPIC=user-login-dlq
 #### 10. **Error Handling and Alerts**:
    - Implement comprehensive error handling to gracefully handle failures in Kafka message processing.
    - Set up alerts using tools like **Prometheus Alertmanager** or **Datadog** to monitor for issues like consumer lag, application crashes, and resource utilization.
+
+
+### Production Readiness - Enhancements <a name="production_readiness_enhancements"></a> 
+
+To ensure the application is production-ready, consider adding the following components:
+
+#### 1. **Monitoring and Observability:**
+   - Use **Prometheus** for system metrics.
+   - Implement **Grafana** dashboards for real-time visualization.
+   - Set up a centralized logging stack (e.g., **ELK**, **Fluentd**, or **Loki**).
+
+#### 2. **Security:**
+   - Enable **Kafka encryption** using SSL/TLS.
+   - Configure SASL for authentication (e.g., SASL-PLAIN, SASL-SCRAM).
+   - Use RBAC in Kubernetes for access control and enforce network policies. 
+
+#### 3. **Scalability:**
+   - Leverage **Kafka Streams** or a framework like **Apache Flink** for complex data processing.
+   - Use horizontal pod autoscaling in Kubernetes based on CPU/memory utilization.
+   - Optimize Kafka retention policies and partition configurations.
+
+#### 4. **CI/CD Pipeline:**
+   - Implement a pipeline using tools like **GitHub Actions**, **CircleCI**, or **Jenkins**.
+   - Automate Docker image builds, Kubernetes deployments, and smoke tests.
+
+#### 5. **Testing:**
+   - Perform end-to-end testing to validate Kafka message flow.
+   - Simulate high-throughput scenarios using tools like **kafka-producer-perf-test.sh**.
+   - Monitor consumer lag during stress testing.
+
+#### 6. **Data Governance:**
+   - Enable schema validation using **Confluent Schema Registry**.
+   - Implement data versioning to handle backward and forward compatibility.
+
 
 
 ## Project Deployment <a name="project_deployment"></a>
@@ -1047,38 +1081,6 @@ To deploy this application in production, follow these steps:
 ### Kubernetes and Container Orchestration <a name="production_kubernetes_orchestration"></a>
 
 ### Logging and Alerging <a name="logging_and_alerging"></a>
-
-### Production Readiness Enhancements <a name="production_readiness_enhancements"></a>
-
-To ensure the application is production-ready, consider adding the following components:
-
-#### 1. **Monitoring and Observability:**
-   - Use **Prometheus** for system metrics.
-   - Implement **Grafana** dashboards for real-time visualization.
-   - Set up a centralized logging stack (e.g., **ELK**, **Fluentd**, or **Loki**).
-
-#### 2. **Security:**
-   - Enable **Kafka encryption** using SSL/TLS.
-   - Configure SASL for authentication (e.g., SASL-PLAIN, SASL-SCRAM).
-   - Use RBAC in Kubernetes for access control and enforce network policies.
-
-#### 3. **Scalability:**
-   - Leverage **Kafka Streams** or a framework like **Apache Flink** for complex data processing.
-   - Use horizontal pod autoscaling in Kubernetes based on CPU/memory utilization.
-   - Optimize Kafka retention policies and partition configurations.
-
-#### 4. **CI/CD Pipeline:**
-   - Implement a pipeline using tools like **GitHub Actions**, **CircleCI**, or **Jenkins**.
-   - Automate Docker image builds, Kubernetes deployments, and smoke tests.
-
-#### 5. **Testing:**
-   - Perform end-to-end testing to validate Kafka message flow.
-   - Simulate high-throughput scenarios using tools like **kafka-producer-perf-test.sh**.
-   - Monitor consumer lag during stress testing.
-
-#### 6. **Data Governance:**
-   - Enable schema validation using **Confluent Schema Registry**.
-   - Implement data versioning to handle backward and forward compatibility.
 
 
 ## Security and Compliance <a name="security_and_compliance"></a>
