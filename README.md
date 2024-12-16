@@ -5,37 +5,30 @@
 
 * **[Introduction](#introduction)**
 * **[Key Features](#key_features)**
-    * [Kafka Consumer & Producer Integration](#key_features_kafka_consumer_and_producer_itegration)
-    * [Message Processing & Validation](#key_features_message_processing_and_validation)
-    * [Retry Logic for Kafka Message Publishing](#key_features_retry_logic_for_kafka_message_publishing)
-    * [Prometheus Metrics for Monitoring](#key_features_prometheus_metrics_for_monitoring)
-    * [Graceful Shutdown](#key_features_graceful_shutdown)
-    * [Worker Pool for Concurrent Message Processing](#key_features_worker_pool_for_concurrent_message_processing)
-    * [Private IP Filtering](#key_features_private_ip_filtering)
-    * [Dead Letter Queue (DLQ)](#key_features_dead_letter_queue)
-
-* **[Design Choices](#design_choices)**
-    * [Consumer Component Features](#consumer_component_features)
-    * [Consumer Flow](#consumer_flow)
+    * [Apache Zookeeper](#)
+    * [Apache Kafka] (#)
+    * [Apache Kafka Producer]
+    * [Apache Kafka Consumer]
+    
 
 * **[Consumer Documentation](#consumer_documentation)**
     * [Consumer Overview](#consumer_documentation_overview)
     * [Consumer Design Choices](#consumer_documentation_design_choices)
-    * [Consumer Component Features](#consumer_component_features)
-        * [Kafka Consumer & Producer Integration](#key_features_kafka_consumer_and_producer_itegration)
-        * [Message Processing & Validation](#key_features_message_processing_and_validation)
-        * [Retry Logic for Kafka Message Publishing](#key_features_retry_logic_for_kafka_message_publishing)
-        * [Prometheus Metrics for Monitoring](#key_features_prometheus_metrics_for_monitoring)
-        * [Graceful Shutdown](#key_features_graceful_shutdown)
-        * [Worker Pool for Concurrent Message Processing](#key_features_worker_pool_for_concurrent_message_processing)
-        * [Private IP Filtering](#key_features_private_ip_filtering)
-        * [Dead Letter Queue (DLQ)](#key_features_dead_letter_queue)
-    * [Consumer Flow](#consumer_flow)
-    * [Consumer Environment Configuraton](#consumer_environment_configuration)
-    * [Consumer Docker Configuraton](#consumer_docker_configuration)
-    * [Consumer Logging and Monitoring](#consumer_logging_and_monitoring)
+    * [Consumer Flow](#consumer_documentation_flow)
+    * [Consumer Features](#consumer_component_features)
+        * [Kafka Consumer & Producer Integration](#consumer_documentation_kafka_consumer_and_producer_itegration)
+        * [Message Processing & Validation](#consumer_documentation_message_processing_and_validation)
+        * [Retry Logic for Kafka Message Publishing](#consumer_documentation_retry_logic_for_kafka_message_publishing)
+        * [Prometheus Metrics for Monitoring](#consumer_documentation_prometheus_metrics_for_monitoring)
+        * [Graceful Shutdown](#consumer_documentation_graceful_shutdown)
+        * [Worker Pool for Concurrent Message Processing](#consumer_documentation_worker_pool_for_concurrent_message_processing)
+        * [Private IP Filtering](#consumer_documentation_private_ip_filtering)
+        * [Dead Letter Queue (DLQ)](#consumer_documentation_dead_letter_queue)
+    * [Consumer Implementation](#consumer_documentation_implementation)
+    * [Consumer Environment Configuraton](#consumer_documentation_environment_configuration)
+    * [Consumer Docker Configuraton](#consumer_documentation_docker_configuration)
     * [Consumer Directory Laout](#consumer_documentation_directory_layout)
-    * [Consumer Implementation](#consumer_implementation)
+   
     * [Consumer Unit Tests](#consumer_documentation_unit_tests)
     * [Consumer Production Notes](#consumer_documentation_production_notes)
 
@@ -90,97 +83,6 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
 - **Graceful shutdown**: The application handles shutdown signals to close Kafka consumer and producer connections cleanly.
 
 
-### 1. **Kafka Consumer & Producer Integration** <a name="key_features_kafka_consumer_and_producer_itegration"></a>
-   - **What it does**: This feature allows the application to consume messages from a Kafka topic, process them, and then produce the processed messages to another Kafka topic or Dead Letter Queue (DLQ) if the message is invalid.
-   - **Motivation**: Kafka is used for its ability to handle high-throughput data streams in a fault-tolerant manner. This feature integrates seamlessly with Kafka to support real-time streaming and processing.
-   - **How it was implemented**:
-     - The `kafka.NewConsumer` and `kafka.NewProducer` functions are used to initialize Kafka consumer and producer instances.
-     - A consumer subscribes to the input topic, polls for new messages, and forwards them to a worker pool for processing.
-     - The producer is responsible for publishing processed messages to the output topic, or failing that, to the DLQ.
-   - **How it should be tested**:
-     - Unit tests can validate Kafka message consumption and production by mocking the `ConsumerInterface` and `ProducerInterface` with predefined messages.
-   - **How it addresses issues**:
-     - This feature enables real-time processing of Kafka streams, crucial for high-volume, low-latency data pipelines as required in the assignment.
-
-### 2. **Message Processing & Validation** <a name="key_features_message_processing_and_validation"></a>
-   - **What it does**: Each message is processed and validated before being forwarded. Invalid messages are sent to a Dead Letter Queue (DLQ) for further investigation.
-   - **Motivation**: To ensure data integrity, only valid messages based on certain criteria (e.g., presence of `UserID`, valid `AppVersion`, etc.) are allowed to proceed to the output topic.
-   - **How it was implemented**:
-     - The `processMessage` function handles unmarshalling, validation, and processing of incoming messages. Valid messages are transformed and timestamped as `ProcessedMessage`.
-     - Invalid messages are identified and logged, and they are then sent to the DLQ using the `publishWithRetry` function to ensure fault tolerance.
-   - **How it should be tested**:
-     - Unit tests for message validation (e.g., ensuring that missing or invalid fields cause the message to be rejected).
-     - Simulating both valid and invalid messages should trigger the correct flow (either processing or DLQ publishing).
-   - **How it addresses issues**:
-     - The feature helps maintain the integrity of the data pipeline by preventing invalid data from being processed, ensuring downstream systems receive clean data.
-
-### 3. **Retry Logic for Kafka Message Publishing** <a name="key_features_retry_logic_for_kafka_message_publishing"></a>
-   - **What it does**: When publishing a message to Kafka, if the operation fails, the application will retry the operation up to a specified number of attempts, with a delay between retries.
-   - **Motivation**: Retry logic improves fault tolerance, ensuring that transient errors in Kafka publishing do not result in lost data.
-   - **How it was implemented**:
-     - The `publishWithRetry` function is responsible for retrying message publication. It retries a maximum of `retries` times with a `delay` between attempts.
-   - **How it should be tested**:
-     - Mocking Kafka's producer failures and ensuring that the retry logic is triggered and the correct number of attempts is made before failing.
-   - **How it addresses issues**:
-     - This retry mechanism helps mitigate issues where transient network or Kafka broker failures may prevent message delivery, improving the reliability of the system.
-
-### 4. **Prometheus Metrics for Monitoring** <a name="key_features_prometheus_metrics_for_monitoring"></a>
-   - **What it does**: This feature integrates Prometheus for real-time monitoring of Kafka message processing. It tracks the number of successfully processed messages, as well as failed ones sent to the DLQ.
-   - **Motivation**: Monitoring metrics are critical for observing the health of the system, understanding message processing volumes, and detecting issues early.
-   - **How it was implemented**:
-     - A Prometheus counter, `kafkaMessagesProcessed`, is incremented every time a message is successfully processed or sent to the DLQ.
-     - A Prometheus metrics server is started on port `9090` using the `promhttp.Handler` to expose these metrics to Prometheus for scraping.
-   - **How it should be tested**:
-     - Integration tests can be written to confirm that the metrics are correctly incremented when messages are processed or failed.
-     - A manual test could involve verifying that the metrics endpoint (`/metrics`) is accessible and showing correct data.
-   - **How it addresses issues**:
-     - Prometheus monitoring ensures that the system’s health can be tracked continuously, helping quickly detect performance or operational issues in the Kafka message pipeline.
-
-### 5. **Graceful Shutdown** <a name="key_features_graceful_shutdown"></a>
-   - **What it does**: The system handles signals like `SIGINT` and `SIGTERM` to gracefully shut down the Kafka consumer and producer, ensuring no data is lost during shutdown.
-   - **Motivation**: Graceful shutdown ensures that the system can stop cleanly without losing messages in-flight or causing data corruption.
-   - **How it was implemented**:
-     - The `handleSignals` function listens for termination signals and invokes a cancel function to stop message processing.
-     - Once the signal is received, it shuts down the Kafka consumer and producer in an orderly manner, ensuring that no message is left unprocessed.
-   - **How it should be tested**:
-     - Test by simulating signals (e.g., `SIGINT` or `SIGTERM`) and verifying that the system stops gracefully without data loss.
-   - **How it addresses issues**:
-     - Ensures system stability and data integrity during shutdown, preventing issues with incomplete message processing.
-
-### 6. **Worker Pool for Concurrent Message Processing** <a name="key_features_worker_pool_for_concurrent_message_processing"></a>
-   - **What it does**: A worker pool processes messages concurrently to ensure efficient message handling and prevent bottlenecks in the data pipeline.
-   - **Motivation**: The worker pool allows the system to scale efficiently by processing multiple messages concurrently, which is crucial for high-throughput Kafka topics.
-   - **How it was implemented**:
-     - A worker pool is created with a fixed number of workers (`workerPoolSize`). Each worker listens for messages and processes them independently.
-     - The workers are synchronized using a `sync.WaitGroup` to ensure that all processing is completed before the program terminates.
-   - **How it should be tested**:
-     - Unit tests can check that multiple workers are correctly processing messages in parallel.
-     - Integration tests could simulate high message volumes to ensure that the system handles them efficiently.
-   - **How it addresses issues**:
-     - The worker pool enables parallel processing, which helps scale the system and ensures that the application can handle large volumes of messages.
-
-### 7. **Private IP Filtering** <a name="key_features_private_ip_filtering"></a>
-   - **What it does**: This feature filters out messages originating from private IP addresses to ensure that only valid, external data is processed.
-   - **Motivation**: Filtering private IP addresses prevents internal traffic from contaminating the data pipeline, ensuring that only relevant data is processed.
-   - **How it was implemented**:
-     - The `isPrivateIP` function checks if the IP address in a message is a private IP (i.e., within reserved ranges). If it is, the message is rejected.
-   - **How it should be tested**:
-     - Tests should verify that messages from private IPs are rejected and that the correct log messages are generated.
-   - **How it addresses issues**:
-     - Helps maintain the quality of data by ensuring that only external sources are processed.
-
-### 8. **Dead Letter Queue (DLQ)** <a name="key_features_dead_letter_queue"></a>
-   - **What it does**: Invalid messages are routed to a Dead Letter Queue (DLQ) for further investigation, ensuring that processing continues for valid messages even in the case of errors.
-   - **Motivation**: To ensure that invalid or corrupted messages do not interfere with normal processing while still allowing for troubleshooting and further action.
-   - **How it was implemented**:
-     - The `publishToDLQ` function sends invalid messages to the `user-login-dlq` Kafka topic. This process is triggered when a message fails validation or processing.
-   - **How it should be tested**:
-     - Unit tests can simulate invalid messages and confirm that they are correctly routed to the DLQ.
-   - **How it addresses issues**:
-     - DLQ provides a mechanism for isolating erroneous messages, ensuring that they do not block the flow of valid messages through the system.
-
----
-
 ## Design Choices <a name="design_choices"></a>
 
 ### 1. **Kafka Topics and Data Flow**
@@ -217,9 +119,75 @@ This consumer application is written in ```Go``` and leverages the ```confluenti
    - **Go**: ```Go``` is a performant, statically typed language with excellent concurrency features, making it well-suited for building scalable and reliable message processing applications like this consumer.
    - **confluentinc/confluent-kafka-go**: This popular ```Go``` library provides a mature and user-friendly API for interacting with Kafka clusters. It offers features for consumer group management, message consumption, and producer functionality.
 
+### Consumer Features <a name="consumer_documentation_features"></a>
 
+#### 1. **Message Validation and Filtering**
+   - **Purpose**: Ensures that each message contains required fields and adheres to a predefined schema.
+   - **Fields Checked**: 
+     - `UserID`: The identifier for the user.
+     - `AppVersion`: The version of the app generating the event.
+     - `DeviceType`: The type of device the user is using (e.g., mobile, desktop).
+   - **Action**: 
+     - Valid messages are forwarded to the `processed-user-login` Kafka topic.
+     - Invalid messages are placed into a Dead Letter Queue (DLQ) (`user-login-dlq`) for further inspection.
 
-### Consumer Implementation <a name="consumer_implementation"></a>
+#### 2. **Error Handling and Retry Logic**
+   - **Purpose**: Ensures that transient errors do not cause message loss.
+   - **How It Works**: 
+     - The consumer retries message processing up to a defined number of times if temporary errors occur (e.g., Kafka unavailability or validation issues).
+     - If all retry attempts are exhausted, the message is sent to the DLQ.
+     - Errors during message consumption or processing are logged for monitoring and debugging.
+
+#### 3. **Graceful Shutdown**
+   - **Purpose**: Ensures that the consumer can gracefully shut down, processing any in-flight messages before exiting.
+   - **How It Works**: 
+     - Upon receiving shutdown signals (`SIGINT`, `SIGTERM`), the consumer stops consuming new messages and finishes processing the current batch.
+     - Logs and metrics are flushed before the consumer stops.
+
+#### 4. **Backpressure Handling**
+   - **Purpose**: Prevents the system from being overwhelmed by too many messages.
+   - **How It Works**: 
+     - The consumer implements rate-limiting and backpressure handling by controlling the rate at which messages are consumed and processed.
+     - This helps manage high message throughput and ensures the system does not exceed capacity.
+
+#### 5. **Logging and Metrics**
+   - **Purpose**: Tracks and logs the consumer’s activity for monitoring and troubleshooting.
+   - **Log Types**: 
+     - **Success Logs**: Log entries for successfully processed messages.
+     - **Error Logs**: Log entries for message validation failures and retry attempts.
+     - **Retry Logs**: When a message is retried due to transient issues.
+   - **Metrics**:
+     - **Message Consumption Rate**: Tracks how fast messages are being consumed.
+     - **Retry Count**: Number of times a message has been retried.
+     - **DLQ Count**: Number of messages that have been sent to the Dead Letter Queue.
+     - **Message Processing Time**: The time taken to process each message.
+   - **Integration**: The logs can be forwarded to centralized logging systems like Datadog or ELK for detailed monitoring.
+
+#### 6. **Dead Letter Queue (DLQ)**
+   - **Purpose**: Holds messages that cannot be processed due to validation errors or failures after retry attempts.
+   - **How It Works**: 
+     - If a message fails validation or processing after the retry limit, it is sent to a Kafka topic (`user-login-dlq`).
+     - This ensures that no data is lost and can be inspected manually or reprocessed later.
+
+#### 7. **Kafka Consumer Group**
+   - **Purpose**: Allows multiple consumer instances to share the load of consuming messages from Kafka.
+   - **How It Works**: The consumer is part of a Kafka consumer group that distributes partitions across all instances of the consumer, ensuring load balancing and fault tolerance.
+
+#### 8. **Scalability**
+   - **Purpose**: Allows the consumer to scale horizontally to handle increased load.
+   - **How It Works**: 
+     - To scale the consumer, you can increase the number of consumer instances in the same Kafka consumer group.
+     - Kafka automatically balances the load by distributing topic partitions across the available consumers.
+
+### Consumer Flow <a name="consumer_documentation_flow"></a>
+
+1. **Consume Message**: The consumer listens to the `user-login` Kafka topic.
+2. **Message Validation and Filtering**: Each message is validated for required fields (`UserID`, `AppVersion`, `DeviceType`). Invalid messages are forwarded to the DLQ, while valid messages are processed further.
+3. **Retry Logic**: If a transient failure occurs (e.g., network issues), the message will be retried a predefined number of times.
+4. **Forward Valid Message**: Valid messages are forwarded to the `processed-user-login` topic.
+5. **Graceful Shutdown**: Upon receiving a shutdown signal, the consumer gracefully finishes processing messages and exits.
+
+### Consumer Implementation <a name="consumer_documentation_implementation"></a>
 
 #### ```main.go``` Breakdown <a name="consumer_documentation_main_go"></a>
 The ```main.go``` file serves as the entry point for the consumer application. It defines various functions responsible for Kafka configuration, message processing, and graceful shutdown. Let's delve into each function's purpose, arguments, and return values.
@@ -593,76 +561,8 @@ The entry point of the application, orchestrating the setup and execution of the
 
 
 
-### Consumer Component Features <a name="consumer_component_features"></a>
 
-#### 1. **Message Validation and Filtering**
-   - **Purpose**: Ensures that each message contains required fields and adheres to a predefined schema.
-   - **Fields Checked**: 
-     - `UserID`: The identifier for the user.
-     - `AppVersion`: The version of the app generating the event.
-     - `DeviceType`: The type of device the user is using (e.g., mobile, desktop).
-   - **Action**: 
-     - Valid messages are forwarded to the `processed-user-login` Kafka topic.
-     - Invalid messages are placed into a Dead Letter Queue (DLQ) (`user-login-dlq`) for further inspection.
-
-#### 2. **Error Handling and Retry Logic**
-   - **Purpose**: Ensures that transient errors do not cause message loss.
-   - **How It Works**: 
-     - The consumer retries message processing up to a defined number of times if temporary errors occur (e.g., Kafka unavailability or validation issues).
-     - If all retry attempts are exhausted, the message is sent to the DLQ.
-     - Errors during message consumption or processing are logged for monitoring and debugging.
-
-#### 3. **Graceful Shutdown**
-   - **Purpose**: Ensures that the consumer can gracefully shut down, processing any in-flight messages before exiting.
-   - **How It Works**: 
-     - Upon receiving shutdown signals (`SIGINT`, `SIGTERM`), the consumer stops consuming new messages and finishes processing the current batch.
-     - Logs and metrics are flushed before the consumer stops.
-
-#### 4. **Backpressure Handling**
-   - **Purpose**: Prevents the system from being overwhelmed by too many messages.
-   - **How It Works**: 
-     - The consumer implements rate-limiting and backpressure handling by controlling the rate at which messages are consumed and processed.
-     - This helps manage high message throughput and ensures the system does not exceed capacity.
-
-#### 5. **Logging and Metrics**
-   - **Purpose**: Tracks and logs the consumer’s activity for monitoring and troubleshooting.
-   - **Log Types**: 
-     - **Success Logs**: Log entries for successfully processed messages.
-     - **Error Logs**: Log entries for message validation failures and retry attempts.
-     - **Retry Logs**: When a message is retried due to transient issues.
-   - **Metrics**:
-     - **Message Consumption Rate**: Tracks how fast messages are being consumed.
-     - **Retry Count**: Number of times a message has been retried.
-     - **DLQ Count**: Number of messages that have been sent to the Dead Letter Queue.
-     - **Message Processing Time**: The time taken to process each message.
-   - **Integration**: The logs can be forwarded to centralized logging systems like Datadog or ELK for detailed monitoring.
-
-#### 6. **Dead Letter Queue (DLQ)**
-   - **Purpose**: Holds messages that cannot be processed due to validation errors or failures after retry attempts.
-   - **How It Works**: 
-     - If a message fails validation or processing after the retry limit, it is sent to a Kafka topic (`user-login-dlq`).
-     - This ensures that no data is lost and can be inspected manually or reprocessed later.
-
-#### 7. **Kafka Consumer Group**
-   - **Purpose**: Allows multiple consumer instances to share the load of consuming messages from Kafka.
-   - **How It Works**: The consumer is part of a Kafka consumer group that distributes partitions across all instances of the consumer, ensuring load balancing and fault tolerance.
-
-#### 8. **Scalability**
-   - **Purpose**: Allows the consumer to scale horizontally to handle increased load.
-   - **How It Works**: 
-     - To scale the consumer, you can increase the number of consumer instances in the same Kafka consumer group.
-     - Kafka automatically balances the load by distributing topic partitions across the available consumers.
-
-
-### Consumer Flow <a name="consumer_flow"></a>
-
-1. **Consume Message**: The consumer listens to the `user-login` Kafka topic.
-2. **Message Validation and Filtering**: Each message is validated for required fields (`UserID`, `AppVersion`, `DeviceType`). Invalid messages are forwarded to the DLQ, while valid messages are processed further.
-3. **Retry Logic**: If a transient failure occurs (e.g., network issues), the message will be retried a predefined number of times.
-4. **Forward Valid Message**: Valid messages are forwarded to the `processed-user-login` topic.
-5. **Graceful Shutdown**: Upon receiving a shutdown signal, the consumer gracefully finishes processing messages and exits.
-
-### Consumer Environment Configuration <a name="consumer_environment_configuration"></a>
+### Consumer Environment Configuration <a name="consumer_documentation_environment_configuration"></a>
 
 The consumer is configured via the `.env` file and can be customized with the following parameters:
 
@@ -680,36 +580,61 @@ The consumer is configured via the `.env` file and can be customized with the fo
 - `KAFKA_ENABLE_AUTO_COMMIT`: Autocommit can be set to true or false,
 
 
-### Consumer Docker Configuration <a name="consumer_docker_configuration"></a>
+### Consumer Docker Configuration <a name="consumer_documentation_docker_configuration"></a>
 
-The consumer is containerized using Docker. Below is the `Dockerfile` and `docker-compose.yml` used for the consumer service.
+The consumer is containerized using Docker. Docker image building steps are chosen in a way that allow for 
+keeping image sizes and software orchestration optimal. Below is the `Dockerfile` and `docker-compose.yml` used for the consumer service.
 
 #### Dockerfile
 
 ```Dockerfile
-# Use the latest  Go image
-FROM golang:1.23.4
+# Stage 1: Build the Go app
+FROM golang:1.23.1 AS builder
 
-# Set the working directory
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy go.mod and go.sum files
+# Copy the Go Modules manifests
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download all dependencies
+RUN go mod tidy
 
-# Copy the application code
+# Copy the source code into the container
 COPY . .
 
-# Build the Go application
+# Build the Go app (no cross-compilation to start)
 RUN go build -o data-consumer main.go
 
-# Run the Go application
+# Run tests (optional)
+RUN go test -v
+
+# Stage 2: Create the final smaller image for running the app
+FROM golang:1.23.1-alpine
+
+# Install necessary dependencies for running the app (including libc6-compat)
+RUN apk --no-cache add ca-certificates libc6-compat
+
+# Set the Current Working Directory inside the container
+WORKDIR /root/
+
+# Copy the pre-built binary from the builder stage
+COPY --from=builder /app/data-consumer .
+
+# Healthcheck script
+COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+RUN chmod +x /usr/local/bin/healthcheck.sh
+
+# Set the Healthcheck in Dockerfile
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+  CMD /usr/local/bin/healthcheck.sh || exit 1
+
+# Ensure the Go application logs to stdout and stderr
 CMD ["./data-consumer"]
+
 ```
 
-### docker-compose.yml 
+### docker-compose.yml service:
 ```docker-compose.yml
 
 services:
@@ -726,9 +651,6 @@ services:
 ```
 
 
-### Consumer Logging and Monitoring <a name="consumer_logging_and_monitoring"></a>
-
-
 ### Consumer Directory Layout <a name="consumer_documentation_directory_layout"></a>
 The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
 
@@ -737,6 +659,7 @@ data-consumer/
 ├── Dockerfile          (Docker build configuration)
 ├── go.mod              (Go module dependency file)
 ├── go.sum               (Checksum file for dependencies)
+├── healthchecks.sh      (Optional healthchecks to verify Kafka availability)
 ├── main_test.go         (Unit Tests to the functions in main.go)
 └── main.go              (Go source code for the consumer application)
 ```
