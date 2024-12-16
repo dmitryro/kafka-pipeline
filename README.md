@@ -553,7 +553,6 @@ The consumer is configured via the `.env` file and can be customized with the fo
 - `KAFKA_DLQ_TOPIC`: The topic for invalid messages (`user-login-dlq`).
 - `KAFKA_CONSUMER_GROUP`: The name of the consumer group (used for consumer group management in Kafka).
 - `KAFKA_RETRY_LIMIT`: The maximum number of retry attempts for a message before it is sent to the DLQ.
-- `KAFKA_LOG_LEVEL`: The logging level (e.g., `debug`, `info`, `warn`, `error`).
 - `KAFKA_SESSION_TIMEOUT`: Kafka optional session timeout variable.
 - `KAFKA_SOCKET_TIMEOUT`: Kafka optional socket timeout variable.
 - `KAFKA_AUTO_OFFSET_RESET`: Kafka auto offet reset can be set to "earliest", "latest", and "none".
@@ -760,7 +759,12 @@ See `.env` for all available environment variables and their descriptions.
 
 ```env
 LEVEL=DEBUG
+COMPOSE_HTTP_TIMEOUT=200
+DEV_MODE=1
 PROJECT_NAME=pipeline
+HOST_URL=http://0.0.0.0:80
+NODE_ENV=development
+# KAFKA related configuration
 KAFKA_LISTENER=kafka://kafka:9092
 KAFKA_BROKER_URL=kafka:9092
 KAFKA_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
@@ -770,21 +774,32 @@ KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INTERNAL
 KAFKA_ADVERTISED_HOST_NAME=localhost
 KAFKA_BROKER_ID=1
 KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-KAFKA_CREATE_TOPICS="user-login:1:1,processed-user-login:1:1,user-login-dlq:1:1"
+KAFKA_CREATE_TOPICS="ship-topic:1:1,user-login:1:1,processed-user-login:1:1"
+KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+KAFKA_DEFAULT_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+ALLOW_ANONYMOUS_LOGIN=yes
+ALLOW_PLAINTEXT_LISTENER=yes
+#ZOO KEEPER
 ZOOKEEPER_CLIENT_PORT=2181
 ZOOKEEPER_TICK_TIME=2000
 ZOO_MY_ID=1
 ZOO_PORT=2181
 ZOO_SERVERS="server.1=zookeeper:2888:3888"
-CONSUMER_GROUP=user-group
-BOOTSTRAP_SERVERS=kafka:9092
-ENABLE_AUTO_COMMIT=false
-SOCKET_TIMEOUT=30000
-SESSION_TIMEOUT=30000
-AUTO_OFFSET_RESET=earliest
-INPUT_TOPIC=user-login
-OUTPUT_TOPIC=processed-user-login
-DLQ_TOPIC=user-login-dlq
+# Kafka Consumer configuration
+KAFKA_CONSUMER_GROUP=user-group
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+KAFKA_BOOTSTRAP_HOST=kafka
+KAFKA_BOOTSTRAP_PORT=9092
+KAFKA_ENABLE_AUTO_COMMT=false
+KAFKA_RETRY_LIMIT=3
+KAFKA_SOCKET_TIMEOUT=30000
+KAFKA_SESSION_TIMEOUT=30000
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_INPUT_TOPIC=user-login
+KAFKA_OUTPUT_TOPIC=processed-user-login
+KAFKA_DLQ_TOPIC=user-login-dlq
 ```
 
 ## Production Readiness <a name="production_readiness"></a>
