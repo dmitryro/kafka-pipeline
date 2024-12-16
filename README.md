@@ -129,7 +129,7 @@ The solution involves setting up a Kafka consumer in Go that consumes messages f
    - **How it addresses issues**:
      - Prometheus monitoring ensures that the system’s health can be tracked continuously, helping quickly detect performance or operational issues in the Kafka message pipeline.
 
-### 5. **Graceful Shutdown** <a name="key_features_graceful_shutdown></a>
+### 5. **Graceful Shutdown** <a name="key_features_graceful_shutdown"></a>
    - **What it does**: The system handles signals like `SIGINT` and `SIGTERM` to gracefully shut down the Kafka consumer and producer, ensuring no data is lost during shutdown.
    - **Motivation**: Graceful shutdown ensures that the system can stop cleanly without losing messages in-flight or causing data corruption.
    - **How it was implemented**:
