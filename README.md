@@ -1431,28 +1431,24 @@ By following these guidelines, you can deploy your Kafka-based data pipeline bot
    kubectl logs -f <pod-name>
    ```
 
-### Kubernetes and Container Orchestration <a name="project_deployment_kubernetes_orchestration"></a>
-
-
 
 ### Logging and Alerging <a name="project_deployment_logging_and_alerging"></a>
 
-# Logging and Alerting
 
 Logging and alerting are essential components in a distributed system, allowing you to monitor application behavior and diagnose issues. This section provides guidelines on setting up logging levels, integrating logging services within AWS, GCP, Azure, and using Prometheus, Grafana, or ELK for monitoring and alerting.
 
-## 1. Log Levels
+#### 1. Log Levels
 
 Log levels define the verbosity of logs. You can configure your application to log different levels of information based on the environment and severity of the event.
 
-### Common Log Levels:
+##### Common Log Levels:
 - **DEBUG**: Verbose logs useful for debugging in development.
 - **INFO**: General operational messages that convey the state of the system.
 - **WARN**: Warnings for events that might not be errors but could be potential issues.
 - **ERROR**: For issues that could impact functionality or require attention.
 - **FATAL**: Critical errors indicating the application is unable to continue.
 
-### Example of Log Level Configuration:
+##### Example of Log Level Configuration:
 
 ```env
 LOG_LEVEL=INFO
@@ -1460,11 +1456,11 @@ LOG_LEVEL=INFO
 
 In a production environment, you might configure the log level to `ERROR` to minimize unnecessary log output, while in a development environment, you might set it to `DEBUG`.
 
-## 2. Integration with Cloud Services (AWS, GCP, Azure)
+#### 2. Integration with Cloud Services (AWS, GCP, Azure)
 
 Many cloud providers offer centralized logging services. Below are configurations for logging services within AWS, GCP, and Azure.
 
-### AWS: CloudWatch Logs
+##### AWS: CloudWatch Logs
 
 You can send application logs to AWS CloudWatch for centralized monitoring.
 
@@ -1474,7 +1470,7 @@ CLOUDWATCH_LOG_GROUP=my-log-group
 CLOUDWATCH_LOG_STREAM=my-log-stream
 ```
 
-### GCP: Stackdriver Logging
+##### GCP: Stackdriver Logging
 
 In Google Cloud Platform (GCP), logs can be sent to Stackdriver.
 
@@ -1484,7 +1480,7 @@ GCP_PROJECT_ID=my-gcp-project
 STACKDRIVER_LOG_NAME=my-log-name
 ```
 
-### Azure: Azure Monitor Logs
+##### Azure: Azure Monitor Logs
 
 For Azure, logs can be forwarded to Azure Monitor.
 
@@ -1493,11 +1489,11 @@ LOGGING_SERVICE=azure_monitor
 AZURE_MONITOR_LOG_NAME=my-log-name
 ```
 
-## 3. Prometheus and Grafana for Monitoring and Alerts
+#### 3. Prometheus and Grafana for Monitoring and Alerts
 
 Prometheus and Grafana are commonly used together for monitoring system metrics and setting up alerts based on thresholds.
 
-### Prometheus Alert Configuration Example:
+##### Prometheus Alert Configuration Example:
 
 Create alerting rules in Prometheus to notify when certain conditions are met, such as an error rate exceeding a threshold.
 
@@ -1514,7 +1510,7 @@ groups:
           summary: "High error rate detected"
 ```
 
-### Grafana Alerts Configuration:
+##### Grafana Alerts Configuration:
 
 Set up alerting directly within Grafana for real-time notifications.
 
@@ -1523,15 +1519,15 @@ Set up alerting directly within Grafana for real-time notifications.
 3. Define the alert condition (e.g., error rate exceeds a certain value).
 4. Set notification channels like email, Slack, or webhooks.
 
-## 4. Configuration Changes for Logging and Alerting
+#### 4. Configuration Changes for Logging and Alerting
 
 For dynamic logging configurations, it’s essential to manage environment variables or configuration files such as `.env` to adjust log levels, integrate logging services, and define alert thresholds. Below are guidelines on how to configure logging and alerting behavior for various use cases.
 
-### **1. Environment Variables for Logging Configuration**
+##### **1. Environment Variables for Logging Configuration**
 
 To configure logging behavior dynamically without changing code, environment variables can be used to modify log levels, enable remote logging services, and manage alert thresholds.
 
-#### **Set Log Level**
+###### **Set Log Level**
 
 The log level controls the verbosity of logs, allowing you to specify how much detail you want to capture. You can set different log levels for different environments (e.g., `DEBUG` for development and `ERROR` for production).
 
@@ -1547,7 +1543,7 @@ The log level controls the verbosity of logs, allowing you to specify how much d
   - `ERROR`: Indicates issues that may affect application performance or data integrity.
   - `FATAL/CRITICAL`: Critical failures requiring immediate attention.
 
-#### **Enable Remote Logging**
+###### **Enable Remote Logging**
 
 For production environments, it's a best practice to forward logs to a centralized logging service like CloudWatch (AWS), Stackdriver (GCP), or Azure Monitor, or to an external service like ELK (Elasticsearch, Logstash, Kibana).
 
@@ -1572,7 +1568,7 @@ For production environments, it's a best practice to forward logs to a centraliz
   LOG_INDEX=my-log-index
   ```
 
-#### **Set Log File Location**
+###### **Set Log File Location**
 
 In some cases, logs are stored locally before being pushed to centralized services. You can configure where logs are stored, such as in `/var/log` or custom directories.
 
@@ -1581,11 +1577,11 @@ In some cases, logs are stored locally before being pushed to centralized servic
   LOG_FILE_PATH=/var/log/myapp/application.log
   ```
 
-### **2. Configure Alerts for Logging**
+##### **2. Configure Alerts for Logging**
 
 Alerts are vital for notifying you when something goes wrong in your application, such as a spike in error rates or an unhandled exception. Alerts can be configured based on log content or application performance metrics.
 
-#### **Set Alert Thresholds**
+###### **Set Alert Thresholds**
 
 Alerts are often tied to log patterns or metrics, such as error rates, response times, or other critical application events. You can use environment variables to specify thresholds for these events.
 
@@ -1599,7 +1595,7 @@ Alerts are often tied to log patterns or metrics, such as error rates, response 
   ALERT_LATENCY_THRESHOLD=500ms  # Trigger an alert if response latency exceeds 500ms
   ```
 
-#### **Prometheus Alerts**
+###### **Prometheus Alerts**
 
 For Prometheus, you can set up alerting rules within your configuration file, which define the conditions under which an alert should be triggered.
 
@@ -1617,7 +1613,7 @@ For Prometheus, you can set up alerting rules within your configuration file, wh
             summary: "High error rate detected"
   ```
 
-#### **Cloud Watch Alarms (AWS)**
+###### **Cloud Watch Alarms (AWS)**
 
 In AWS, you can configure **CloudWatch Alarms** based on metrics or log patterns to trigger alerts when certain thresholds are exceeded.
 
@@ -1627,7 +1623,7 @@ In AWS, you can configure **CloudWatch Alarms** based on metrics or log patterns
     aws cloudwatch put-metric-alarm --alarm-name "HighErrorRate" --metric-name "Errors" --namespace "AWS/Logs" --statistic "Sum" --period 300 --threshold 5 --comparison-operator "GreaterThanThreshold" --evaluation-periods 1 --alarm-actions arn:aws:sns:region:account-id:alarm-topic
     ```
 
-#### **Grafana Alerts**
+###### **Grafana Alerts**
 
 In **Grafana**, you can set up alerts on any metric visualized in your dashboards. Grafana can notify you through various channels such as email, Slack, or webhook when an alert is triggered.
 
@@ -1637,11 +1633,11 @@ In **Grafana**, you can set up alerts on any metric visualized in your dashboard
     - Under the "Alert" tab, define the condition to trigger an alert, such as "if the error rate exceeds 5% for 5 minutes".
     - Set notification channels (email, Slack, etc.) to receive the alert.
 
-### **3. Dynamic Configuration Management**
+##### **3. Dynamic Configuration Management**
 
 For production systems, it’s crucial to adjust configurations without modifying code. Tools like **Ansible**, **Terraform**, or even Kubernetes ConfigMaps can manage environment variables and configurations dynamically.
 
-#### **Example with Terraform**
+###### **Example with Terraform**
 
 With Terraform, you can manage configuration settings as part of your infrastructure as code, ensuring that settings like log levels, log service configurations, and alert thresholds are set up consistently across environments.
 
@@ -1657,7 +1653,7 @@ With Terraform, you can manage configuration settings as part of your infrastruc
   }
   ```
 
-#### **Example with Ansible**
+###### **Example with Ansible**
 
 Ansible can be used to deploy configuration changes to remote systems, ensuring that your applications are using the correct logging configurations. Ansible tasks can set environment variables in the `.env` file or configure logging services.
 
@@ -1679,7 +1675,7 @@ Ansible can be used to deploy configuration changes to remote systems, ensuring 
 
 ---
 
-### **Conclusion**
+##### **Conclusion**
 
 By using configuration files like `.env`, or leveraging automation tools such as **Terraform** and **Ansible**, you can dynamically manage logging and alerting configurations to ensure flexibility and scalability. Centralized logging services (CloudWatch, Stackdriver, ELK) and alerting systems (Prometheus, Grafana) enable proactive monitoring of system performance, which helps ensure that your application is running smoothly and that issues are detected early.
 
