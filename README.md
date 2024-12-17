@@ -8,8 +8,8 @@
 * **[Key Components and Features](#key_features)**
     * [Apache Zookeeper](#key_features_apache_zookeeper)
     * [Apache Kafka](#key_features_apache_kafka)
-    * [Apache Kafka Producer](#key_features_kafka_producer)
-    * [Apache Kafka Consumer](#key_features_kafka_consumer)
+    * [Apache Kafka Producer](#key_features_producer)
+    * [Apache Kafka Consumer](#key_features_consumer)
     * [Docker Compose Configuraton](#key_features_docker_compose_configuration)
 
 * **[Consumer](#consumer_documentation)**
