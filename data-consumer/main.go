@@ -531,6 +531,11 @@ func isValidMessage(msg Message) bool {
 func publishWithRetry(producer ProducerInterface, topic string, msg []byte, maxRetries int, retryDelay time.Duration) error {
 	var err error
 	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Create a new context with timeout for each retry attempt
+		ctx, cancel := context.WithTimeout(context.Background(), retryDelay)
+		defer cancel() // Ensure the context is cancelled after each retry attempt
+
+		// Start producing the message with the given topic and msg
 		err = producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{
 				Topic:     &topic,
@@ -539,12 +544,23 @@ func publishWithRetry(producer ProducerInterface, topic string, msg []byte, maxR
 			Value: msg,
 		}, nil)
 
+		// Check if the message was produced successfully
 		if err == nil {
 			return nil
 		}
 
+		// Log the error and attempt retry
 		log.Printf("Publish attempt %d/%d failed: %v", attempt, maxRetries, err)
-		time.Sleep(retryDelay)
+		
+		// Wait for the specified retry delay before retrying
+		select {
+		case <-time.After(retryDelay):
+			// Proceed to next retry attempt
+		case <-ctx.Done():
+			// Timeout occurred, log and exit retry loop
+			log.Printf("Retry attempt %d/%d timed out: %v", attempt, maxRetries, ctx.Err())
+			return ctx.Err() // Return context error (e.g., timeout)
+		}
 	}
 	return err
 }
