@@ -106,6 +106,31 @@ var (
 )
 
 /**
+ * kafkaProcessingDuration is a Prometheus Histogram metric that tracks the duration of Kafka message processing.
+ * 
+ * This metric allows tracking the time taken to process each Kafka message, and it can be used to analyze
+ * the performance of message processing over time. The histogram provides buckets to categorize processing
+ * durations into different ranges.
+ *
+ * Usage:
+ * - Observe the processing duration for each message using the `Observe` method.
+ * - Register this metric with the Prometheus registry during application initialization.
+ * - Use Prometheus scrapers or monitoring dashboards to visualize and alert on the processing durations, 
+ *   and to identify bottlenecks or performance issues.
+ *
+ * Example:
+ * kafkaProcessingDuration.Observe(durationInSeconds)
+ */
+var kafkaProcessingDuration = prometheus.NewHistogramVec(
+    prometheus.HistogramOpts{
+        Name:    "kafka_processing_duration_seconds",
+        Help:    "Histogram of message processing durations in seconds.",
+        Buckets: prometheus.DefBuckets,
+    },
+    []string{"result"},
+)
+
+/**
  * KafkaProducerWrapper
  *
  * Represents a wrapper around Producer object to allow more efficient contract and decoupling.
@@ -159,7 +184,7 @@ func (k *KafkaProducerWrapper) Close() error {
  */
 func init() {
     // Register Prometheus metrics
-	prometheus.MustRegister(kafkaMessagesProcessed)
+    prometheus.MustRegister(kafkaMessagesProcessed, kafkaProcessingDuration)
 }
 
 /**
@@ -257,11 +282,11 @@ func main() {
 	// Worker pool to process messages concurrently
 	workerPoolSize := 10 // Default value
     if val := os.Getenv("KAFKA_WORKER_POOL_SIZE"); val != "" {
-        if parsedVal, err := strconv.Atoi(val); err == nil {
+         if parsedVal, err := strconv.Atoi(val); err == nil && parsedVal <= 100 {
             workerPoolSize = parsedVal
-        } else {
-            log.Fatalf("Invalid KAFKA_WORKER_POOL_SIZE value: %s. Must be an integer.", val)
-        }
+         } else {
+            log.Printf("Invalid or too large KAFKA_WORKER_POOL_SIZE value: %s. Defaulting to 10.", val)
+         }
     }
 
     wg.Add(workerPoolSize)
@@ -528,20 +553,20 @@ func isValidMessage(msg Message) bool {
  * - This function is useful when there are temporary issues with the Kafka broker or network that might prevent immediate delivery.
  * - The retry mechanism ensures that transient failures do not result in immediate message loss.
  */
-func publishWithRetry(producer ProducerInterface, topic string, msg []byte, maxRetries int, retryDelay time.Duration) error {
+func publishWithRetry(producer ProducerInterface, topic string, message []byte, retries int, delay time.Duration) error {
 	var err error
-	for attempt := 1; attempt <= maxRetries; attempt++ {
+	for attempt := 1; attempt <= retries; attempt++ {
 		// Create a new context with timeout for each retry attempt
-		ctx, cancel := context.WithTimeout(context.Background(), retryDelay)
+		ctx, cancel := context.WithTimeout(context.Background(), delay)
 		defer cancel() // Ensure the context is cancelled after each retry attempt
 
-		// Start producing the message with the given topic and msg
+		// Start producing the message with the given topic and message
 		err = producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{
 				Topic:     &topic,
 				Partition: kafka.PartitionAny,
 			},
-			Value: msg,
+			Value: message,
 		}, nil)
 
 		// Check if the message was produced successfully
@@ -550,15 +575,15 @@ func publishWithRetry(producer ProducerInterface, topic string, msg []byte, maxR
 		}
 
 		// Log the error and attempt retry
-		log.Printf("Publish attempt %d/%d failed: %v", attempt, maxRetries, err)
+		log.Printf("Publish attempt %d/%d failed: %v", attempt, retries, err)
 		
 		// Wait for the specified retry delay before retrying
 		select {
-		case <-time.After(retryDelay):
+		case <-time.After(delay):
 			// Proceed to next retry attempt
 		case <-ctx.Done():
 			// Timeout occurred, log and exit retry loop
-			log.Printf("Retry attempt %d/%d timed out: %v", attempt, maxRetries, ctx.Err())
+			log.Printf("Retry attempt %d/%d timed out: %v", attempt, retries, ctx.Err())
 			return ctx.Err() // Return context error (e.g., timeout)
 		}
 	}
