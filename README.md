@@ -310,8 +310,7 @@ type ProducerInterface interface {
 ```
 **Description:**
 This interface defines the methods required for a Kafka producer. Implementations of this interface are responsible for sending messages to a Kafka topic, managing delivery reports, and ensuring fault tolerance during message production.
-**Functions:**:
-
+**Functions:**
 - ```Produce```
   ```go 
    Poduce(*kafka.Message, chan kafka.Event) error
