@@ -1037,7 +1037,7 @@ The tests provide comprehensive coverage of the `main.go` file and Kafka consume
    - The consumer application should also be scaled horizontally by adding more pods or containers. Each consumer should be part of a consumer group to ensure that messages are processed in parallel across multiple instances.
 
 #### 5. **Automated Deployments and CI/CD**
-   - Implement a **CI/CD pipeline** using **GitLab CI**, **Jenkins**, or **GitHub Actions** to automate the testing, building, and deployment of the system to Kubernetes.
+   - Implement a **CI/CD pipeline** using **GitLab CI**, **Jenkins**, **Terraform**, **Ansible**, **CircleCI** or **GitHub Actions** to automate the testing, building, and deployment of the system to Kubernetes.
    - The pipeline should include steps to:
      - Build Docker images for the producer and consumer services.
      - Push the Docker images to a container registry (e.g., Docker Hub, Amazon ECR).
