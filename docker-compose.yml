@@ -47,12 +47,6 @@ services:
     environment:
       BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TOPIC: user-login
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9093"]
-      interval: 10s
-      retries: 5
-      timeout: 5s
-      start_period: 10s
     networks:
       - kafka-network
 
@@ -72,6 +66,5 @@ networks:
     driver: bridge
 
 volumes:
-  kafka_data:
   zoo_data:
   zoo_datalog:
