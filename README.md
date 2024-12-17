@@ -844,32 +844,106 @@ The consumer is containerized using Docker. Below is the `Dockerfile` and `docke
 #### Dockerfile
 
 ```Dockerfile
-# Use the latest  Go image
-FROM golang:1.23.4
+# Stage 1: Build the Go app
+FROM golang:1.23.1 AS builder
 
-# Set the working directory
+# Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy go.mod and go.sum files
+# Copy the Go Modules manifests
 COPY go.mod go.sum ./
 
-# Download dependencies
-RUN go mod download
+# Download all dependencies
+RUN go mod tidy
 
-# Copy the application code
+# Copy the source code into the container
 COPY . .
 
-# Build the Go application
+# Build the Go app (no cross-compilation to start)
 RUN go build -o data-consumer main.go
 
-# Run the Go application
+# Run tests (optional)
+#RUN go test -v
+
+# Stage 2: Create the final smaller image for running the app
+FROM golang:1.23.1-alpine
+
+# Install necessary dependencies for running the app (including libc6-compat)
+RUN apk --no-cache add ca-certificates libc6-compat
+
+# Set the Current Working Directory inside the container
+WORKDIR /root/
+
+# Copy the pre-built binary from the builder stage
+COPY --from=builder /app/data-consumer .
+
+# Healthcheck script
+COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+RUN chmod +x /usr/local/bin/healthcheck.sh
+
+# Set the Healthcheck in Dockerfile
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+  CMD /usr/local/bin/healthcheck.sh || exit 1
+
+# Ensure the Go application logs to stdout and stderr
 CMD ["./data-consumer"]
+
 ```
 
 ### docker-compose.yml 
 ```docker-compose.yml
-
 services:
+  zookeeper:
+    container_name: ${PROJECT_NAME}-zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    env_file:
+      - .env
+    ports:
+      - 32181:32181
+      - 2181:2181
+    networks:
+      - kafka-network
+    volumes:
+      - zoo_data:/data
+      - zoo_datalog:/datalog
+    deploy:
+      replicas: 1
+
+  kafka:
+    container_name: ${PROJECT_NAME}-kafka
+    env_file:
+      - .env
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - 29092:29092
+      - 9092:9092
+    networks:
+      - kafka-network
+    deploy:
+      replicas: 1
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "nc", "-z", "kafka", "9092"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+
+  my-python-producer:
+    container_name: ${PROJECT_NAME}-producer
+    image: mpradeep954/fetch-de-data-gen
+    depends_on:
+      - kafka
+    restart: on-failure:10
+    ports:
+      - 9093:9093
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC: user-login
+    networks:
+      - kafka-network
+
   data-consumer:
     container_name: ${PROJECT_NAME}-consumer
     env_file:
@@ -880,8 +954,44 @@ services:
       - kafka
     networks:
       - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge
+
+volumes:
+  zoo_data:
+  zoo_datalog:
+
 ```
 
+### kafka-topics.sh
+```kafka-topics.sh
+#!/bin/bash
+
+# Kafka broker URL
+BROKER=$2
+TOPIC=$4
+PARTITIONS=$6
+REPLICATION=$8
+
+# Check if correct arguments are passed
+if [[ $# -lt 8 ]]; then
+    echo "Usage: kafka-topics.sh --create --topic <topic_name> --partitions <num_partitions> --replication-factor <num_replicas> --bootstrap-server <kafka_broker>"
+    exit 1
+fi
+
+# Create the Kafka topic
+kafka-topics --create \
+    --topic "$TOPIC" \
+    --partitions "$PARTITIONS" \
+    --replication-factor "$REPLICATION" \
+    --bootstrap-server "$BROKER" \
+    --if-not-exists
+
+# Display a confirmation message
+echo "Topic '$TOPIC' created successfully with $PARTITIONS partitions and $REPLICATION replication factor."
+```
 
 ### Consumer Directory Layout <a name="consumer_documentation_directory_layout"></a>
 The consumer logic resides within the data-consumer directory. Here's a breakdown of its contents:
