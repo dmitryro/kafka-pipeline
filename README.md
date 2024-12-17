@@ -727,6 +727,7 @@ func init() {
     log.Println("Initializing application configurations...")
     prometheus.MustRegister(kafkaMessagesProcessed)
 }
+```
 ---
 
 ##### `main()`
