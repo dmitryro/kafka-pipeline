@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
-    "strconv"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -82,7 +82,7 @@ type ProcessedMessage struct {
 
 /**
  * kafkaMessagesProcessed is a Prometheus CounterVec metric that tracks the total number of Kafka messages processed.
- * 
+ *
  * This metric includes a "result" label, which can be used to categorize messages
  * by their processing outcome (e.g., "success", "failure").
  *
@@ -107,7 +107,7 @@ var (
 
 /**
  * kafkaProcessingDuration is a Prometheus Histogram metric that tracks the duration of Kafka message processing.
- * 
+ *
  * This metric allows tracking the time taken to process each Kafka message, and it can be used to analyze
  * the performance of message processing over time. The histogram provides buckets to categorize processing
  * durations into different ranges.
@@ -115,19 +115,19 @@ var (
  * Usage:
  * - Observe the processing duration for each message using the `Observe` method.
  * - Register this metric with the Prometheus registry during application initialization.
- * - Use Prometheus scrapers or monitoring dashboards to visualize and alert on the processing durations, 
+ * - Use Prometheus scrapers or monitoring dashboards to visualize and alert on the processing durations,
  *   and to identify bottlenecks or performance issues.
  *
  * Example:
  * kafkaProcessingDuration.Observe(durationInSeconds)
  */
 var kafkaProcessingDuration = prometheus.NewHistogramVec(
-    prometheus.HistogramOpts{
-        Name:    "kafka_processing_duration_seconds",
-        Help:    "Histogram of message processing durations in seconds.",
-        Buckets: prometheus.DefBuckets,
-    },
-    []string{"result"},
+	prometheus.HistogramOpts{
+		Name:    "kafka_processing_duration_seconds",
+		Help:    "Histogram of message processing durations in seconds.",
+		Buckets: prometheus.DefBuckets,
+	},
+	[]string{"result"},
 )
 
 /**
@@ -144,15 +144,15 @@ type KafkaProducerWrapper struct {
 
 /**
  * Close gracefully shuts down the KafkaProducerWrapper by closing the underlying Kafka producer.
- * 
- * This method ensures that any resources held by the Kafka producer are properly released, 
- * preventing resource leaks or hanging connections. It is typically called during the 
+ *
+ * This method ensures that any resources held by the Kafka producer are properly released,
+ * preventing resource leaks or hanging connections. It is typically called during the
  * application's shutdown process to clean up.
  *
- * @param: None 
+ * @param: None
  *
  * @return:
- * - An error (if any) encountered while closing the producer. In this implementation, 
+ * - An error (if any) encountered while closing the producer. In this implementation,
  *   it always returns nil, as the underlying producer's `Close` method does not produce an error.
  *
  * Example:
@@ -166,32 +166,32 @@ func (k *KafkaProducerWrapper) Close() error {
 /**
  * init initializes the application-wide Prometheus metrics and registers them with the global
  * Prometheus metrics registry.
- * 
- * The `init` function is a special function in Go that is automatically executed once when the 
- * package is imported. It is commonly used for initialization tasks such as setting up metrics, 
+ *
+ * The `init` function is a special function in Go that is automatically executed once when the
+ * package is imported. It is commonly used for initialization tasks such as setting up metrics,
  * logging configurations, or global state.
- * 
- * This `init` function registers the custom Prometheus metrics defined in the application, 
+ *
+ * This `init` function registers the custom Prometheus metrics defined in the application,
  * ensuring they are available for collection and exposure to monitoring systems.
  *
- * @param: None 
+ * @param: None
  *
  * @return: void
- * - This function does not return any value. 
+ * - This function does not return any value.
  *
  * Usage:
  * No explicit invocation is needed as Go calls `init` automatically during the package initialization.
  */
 func init() {
-    // Register Prometheus metrics
-    prometheus.MustRegister(kafkaMessagesProcessed, kafkaProcessingDuration)
+	// Register Prometheus metrics
+	prometheus.MustRegister(kafkaMessagesProcessed, kafkaProcessingDuration)
 }
 
 /**
  * main:
  *
- * The entry point of the application that sets up the Kafka consumer and producer, configures signal handling 
- * for graceful shutdown, initializes a worker pool for concurrent message processing, and starts the main 
+ * The entry point of the application that sets up the Kafka consumer and producer, configures signal handling
+ * for graceful shutdown, initializes a worker pool for concurrent message processing, and starts the main
  * Kafka consumer loop.
  *
  * Detailed Workflow:
@@ -225,7 +225,7 @@ func init() {
  *    - Handles any Kafka errors reported during polling.
  *    - Stops consuming and processing messages gracefully when a shutdown signal is received.
  *
- * @param: None 
+ * @param: None
  *
  * @return: void
  * - This function does not return any value.
@@ -236,7 +236,7 @@ func init() {
  */
 func main() {
 
-    // Initialize the Kafka consumer and producer
+	// Initialize the Kafka consumer and producer
 	inputTopic := os.Getenv("KAFKA_INPUT_TOPIC")
 	outputTopic := os.Getenv("KAFKA_OUTPUT_TOPIC")
 	dlqTopic := os.Getenv("KAFKA_DLQ_TOPIC")
@@ -281,15 +281,15 @@ func main() {
 
 	// Worker pool to process messages concurrently
 	workerPoolSize := 10 // Default value
-    if val := os.Getenv("KAFKA_WORKER_POOL_SIZE"); val != "" {
-         if parsedVal, err := strconv.Atoi(val); err == nil && parsedVal <= 100 {
-            workerPoolSize = parsedVal
-         } else {
-            log.Printf("Invalid or too large KAFKA_WORKER_POOL_SIZE value: %s. Defaulting to 10.", val)
-         }
-    }
+	if val := os.Getenv("KAFKA_WORKER_POOL_SIZE"); val != "" {
+		if parsedVal, err := strconv.Atoi(val); err == nil && parsedVal <= 100 {
+			workerPoolSize = parsedVal
+		} else {
+			log.Printf("Invalid or too large KAFKA_WORKER_POOL_SIZE value: %s. Defaulting to 10.", val)
+		}
+	}
 
-    wg.Add(workerPoolSize)
+	wg.Add(workerPoolSize)
 	for i := 0; i < workerPoolSize; i++ {
 		go func() {
 			defer wg.Done()
@@ -326,8 +326,8 @@ func main() {
 /**
  * processMessages:
  *
- * Processes messages from the message channel, validates them, and publishes them to either the output topic 
- * (for valid messages) or the Dead Letter Queue (DLQ) topic (for invalid messages). Implements retry logic for 
+ * Processes messages from the message channel, validates them, and publishes them to either the output topic
+ * (for valid messages) or the Dead Letter Queue (DLQ) topic (for invalid messages). Implements retry logic for
  * publishing failures and gracefully exits when the context is canceled.
  *
  * Workflow:
@@ -338,15 +338,15 @@ func main() {
  * 3. Retry logic is applied when publishing messages, ensuring up to three attempts with a delay between retries.
  * 4. The function terminates gracefully when the `ctx.Done` signal is received or the channel is closed.
  *
- * @param ctx: A `context.Context` instance used for managing the lifecycle of the worker goroutine. The function 
+ * @param ctx: A `context.Context` instance used for managing the lifecycle of the worker goroutine. The function
  *             exits when the context is canceled, ensuring clean shutdown.
  * @param messageChan: A read-only channel (`<-chan`) through which Kafka messages are received from the main consumer loop.
- * @param producer: An interface (`ProducerInterface`) that abstracts Kafka producer functionality. Used to send 
+ * @param producer: An interface (`ProducerInterface`) that abstracts Kafka producer functionality. Used to send
  *                  processed messages to the appropriate topic.
  * @param outputTopic: A string representing the name of the Kafka topic where valid messages are published.
- * @param dlqTopic: A string representing the name of the Kafka Dead Letter Queue (DLQ) topic where invalid messages 
+ * @param dlqTopic: A string representing the name of the Kafka Dead Letter Queue (DLQ) topic where invalid messages
  *                  are published for troubleshooting or reprocessing.
- * 
+ *
  * @return: void
  * - This function does not return any value.*
  *
@@ -369,8 +369,8 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
 				// Enrich and publish invalid messages to the DLQ
 				dlqMessage := map[string]interface{}{
 					"error": map[string]interface{}{
-						"reason":   "Invalid message structure",
-						"message":  msg.Value,
+						"reason":  "Invalid message structure",
+						"message": msg.Value,
 						"metadata": map[string]interface{}{
 							"topic":     *msg.TopicPartition.Topic,
 							"partition": msg.TopicPartition.Partition,
@@ -422,7 +422,7 @@ func processMessages(ctx context.Context, messageChan <-chan *kafka.Message, pro
  * Workflow:
  * 1. The input raw message payload (JSON) is unmarshalled into a `Message` struct.
  * 2. The validity of the message is checked using the `isValidMessage` function:
- *    - If the message is invalid (e.g., missing required fields), the function logs the error and returns a 
+ *    - If the message is invalid (e.g., missing required fields), the function logs the error and returns a
  *      `nil` byte array and `false` for the validity flag.
  * 3. If valid, the `Locale` field of the message is converted to lowercase.
  * 4. The processed message is enriched with a timestamp and marshalled into a JSON format.
@@ -548,7 +548,7 @@ func isValidMessage(msg Message) bool {
  * @return: `error` - If the message is successfully sent, the function returns `nil`.
  *                    If all retry attempts fail, it returns an error message describing the failure reason.
  *                    The error message includes the number of attempts made and the last error encountered.
- * 
+ *
  * Notes:
  * - This function is useful when there are temporary issues with the Kafka broker or network that might prevent immediate delivery.
  * - The retry mechanism ensures that transient failures do not result in immediate message loss.
@@ -576,7 +576,7 @@ func publishWithRetry(producer ProducerInterface, topic string, message []byte, 
 
 		// Log the error and attempt retry
 		log.Printf("Publish attempt %d/%d failed: %v", attempt, retries, err)
-		
+
 		// Wait for the specified retry delay before retrying
 		select {
 		case <-time.After(delay):
@@ -594,7 +594,7 @@ func publishWithRetry(producer ProducerInterface, topic string, message []byte, 
  * isPrivateIP:
  *
  * Checks if a given IP address is a private IP address.
- * 
+ *
  * Private IP addresses are used within local networks and are not routable on the public internet.
  * Common ranges for private IP addresses include:
  * - 10.0.0.0 to 10.255.255.255
@@ -616,7 +616,7 @@ func publishWithRetry(producer ProducerInterface, topic string, message []byte, 
  * - This function does not handle invalid IP formats (e.g., malformed IP addresses); it assumes the input is a valid IP string.
  */
 func isPrivateIP(ip string) bool {
-    parsedIP := net.ParseIP(ip)
+	parsedIP := net.ParseIP(ip)
 	return parsedIP != nil && parsedIP.IsPrivate()
 }
 
@@ -694,7 +694,7 @@ func handleSignals(cancel context.CancelFunc, consumer ConsumerInterface, produc
  *   error and terminates the program.
  */
 func startMetricsServer() {
-    http.Handle("/metrics", promhttp.Handler())
+	http.Handle("/metrics", promhttp.Handler())
 	go func() {
 		log.Fatal(http.ListenAndServe(":9090", nil))
 	}()
