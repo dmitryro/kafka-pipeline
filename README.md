@@ -308,9 +308,9 @@ type ProducerInterface interface {
     Close() error // Ensure Close() returns an error
 }
 ```
-**Description**
+**Description:**
 This interface defines the methods required for a Kafka producer. Implementations of this interface are responsible for sending messages to a Kafka topic, managing delivery reports, and ensuring fault tolerance during message production.
-**Functioons**:
+**Functions:**:
 
 - ```Produce```
   ```go 
@@ -327,7 +327,7 @@ This interface defines the methods required for a Kafka producer. Implementation
   - `@param None`: No parameters  
   - `@return error`: Returns an error if the consumer cannot be closed properly, otherwise nil. This method ensures that the consumer is properly shut down and any necessary cleanup is performed.
 
-**Purpose**
+**Purpose:**
 This interface helps decouple the Kafka message production logic from the application code, making it easier to test and modify. It allows for flexible implementations of Kafka producers with varying levels of fault tolerance and delivery management.
 
 
@@ -339,10 +339,10 @@ type ConsumerInterface interface {
     Close() error
 }
 ```
-**Description**
+**Description:**
 This interface defines the methods required for a Kafka consumer. Implementations of this interface handle subscribing to Kafka topics, consuming messages, and processing them in a fault-tolerant and scalable manner.
 
-**Functioons**:
+**Functions:**:
 
 - ```Subscribe```
   ```go 
@@ -365,7 +365,7 @@ This interface defines the methods required for a Kafka consumer. Implementation
   - @param None
   - @return error: Returns an error if the consumer cannot be closed properly, otherwise nil. This method ensures that the consumer is properly shut down and any necessary cleanup is performed.
 
-**Purpose**
+**Purpose:**
 This interface provides a decoupled way of consuming Kafka messages in an application, enabling easier unit testing and flexibility. It ensures that Kafka consumers can be implemented in a scalable manner, with error handling and fault tolerance built in.
 
 
