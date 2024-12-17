@@ -889,6 +889,7 @@ data-consumer/
 ├── Dockerfile          (Docker build configuration)
 ├── go.mod              (Go module dependency file)
 ├── go.sum               (Checksum file for dependencies)
+├── healthcheck.sh      (Optional healcheck to ping kafka for availability)
 ├── main_test.go         (Unit Tests to the functions in main.go)
 └── main.go              (Go source code for the consumer application)
 ```
