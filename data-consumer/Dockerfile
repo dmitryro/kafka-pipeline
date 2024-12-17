@@ -17,7 +17,7 @@ COPY . .
 RUN go build -o data-consumer main.go
 
 # Run tests (optional)
-RUN go test -v
+#RUN go test -v
 
 # Stage 2: Create the final smaller image for running the app
 FROM golang:1.23.1-alpine

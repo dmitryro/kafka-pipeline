@@ -358,7 +358,7 @@ This interface defines the methods required for a Kafka consumer. Implementation
   ```
   - `@param timeoutMs` (*int*): The timeout in milliseconds to wait for a new message from Kafka.  
   - `@return kafka.Event`: Returns a `kafka.Event`, which may represent a new message, an error, or other Kafka-related events.
-- ```Close
+  ```Close```
   ```go 
   Close() error
   ```
