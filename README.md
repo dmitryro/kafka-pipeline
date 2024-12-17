@@ -31,7 +31,7 @@
 * **[Project Deployment](#project_deployment)**
     * [Running the Project Locally](#project_deployment_running_locally)
     * [Production Deployment Steps](#project_deployment_production_deployment_steps)
-    * [Deploying In The Cloud](#project_deployment_deploying_in_the_cloud")
+    * [Deploying In The Cloud](#project_deployment_deploying_in_the_cloud)
     * [Deploying in Non-Cloud Environments](#project_deployment_deploying_in_non_cloud)
     * [Deployment Commands](#project_deployment_deployment_commands) 
     * [Logging and Alerting](#project_deployment_logging_and_alerging)
@@ -1268,7 +1268,7 @@ To deploy this application in the cloud using best practices, including CI/CD pi
        - Use **AWS MSK** for managed Kafka or deploy Kafka on EC2.
      - **GCP**: Use **Google Cloud Deployment Manager** or **Terraform** to provision **GKE** (Google Kubernetes Engine) clusters and other resources.
      - **Azure**: Use **Azure DevOps** pipelines and **Terraform** to provision **AKS** (Azure Kubernetes Service).
-
+eploying In The Cloud
    **Best Practices:**
    - Always use **Infrastructure as Code (IaC)** for reproducible deployments (Terraform, CloudFormation).
    - Ensure secure networking by setting up **VPCs** and **Private Subnets** for Kafka and other components to communicate internally.
