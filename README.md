@@ -841,6 +841,54 @@ The consumer is configured via the `.env` file and can be customized with the fo
 
 The consumer is containerized using Docker. Below is the `Dockerfile` and `docker-compose.yml` used for the consumer service.
 
+#### .env - Configuration file, containing the environment variables used by Docker through docker-compose.
+```.env
+LEVEL=DEBUG
+COMPOSE_HTTP_TIMEOUT=200
+DEV_MODE=1
+PROJECT_NAME=pipeline
+HOST_URL=http://0.0.0.0:80
+NODE_ENV=development
+# KAFKA related configuration
+KAFKA_LISTENER=kafka://kafka:9092
+KAFKA_BROKER_URL=kafka:9092
+KAFKA_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
+KAFKA_ADVERTISED_LISTENERS=LISTENER_INTERNAL://kafka:9092,LISTENER_EXTERNAL://localhost:29092
+KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INTERNAL
+KAFKA_ADVERTISED_HOST_NAME=localhost
+KAFKA_BROKER_ID=1
+KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+KAFKA_CREATE_TOPICS="ship-topic:1:1,user-login:1:1,processed-user-login:1:1"
+KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+KAFKA_DEFAULT_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+ALLOW_ANONYMOUS_LOGIN=yes
+ALLOW_PLAINTEXT_LISTENER=yes
+#ZOO KEEPER
+ZOOKEEPER_CLIENT_PORT=2181
+ZOOKEEPER_TICK_TIME=2000
+ZOO_MY_ID=1
+ZOO_PORT=2181
+ZOO_SERVERS="server.1=zookeeper:2888:3888"
+# Kafka Consumer configuration
+KAFKA_CONSUMER_GROUP=user-group
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+KAFKA_BOOTSTRAP_HOST=kafka
+KAFKA_BOOTSTRAP_PORT=9092
+KAFKA_ENABLE_AUTO_COMMT=false
+KAFKA_RETRY_LIMIT=3
+KAFKA_SOCKET_TIMEOUT=30000
+KAFKA_SESSION_TIMEOUT=30000
+KAFKA_AUTO_OFFSET_RESET=latest
+KAFKA_INPUT_TOPIC=user-login
+KAFKA_OUTPUT_TOPIC=processed-user-login
+KAFKA_DLQ_TOPIC=user-login-dlq
+KAFKA_WORKER_POOL_SIZE=10
+
+```
+
 #### Dockerfile
 
 ```Dockerfile
@@ -965,6 +1013,8 @@ volumes:
 
 ```
 
+#### Kafka Topics Utility
+Located in the project root directory, `kafka-topics.sh` is a tool that will help you increase the number of partitions for an existing Kafka topic.
 ### kafka-topics.sh
 ```kafka-topics.sh
 #!/bin/bash
