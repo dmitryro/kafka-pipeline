@@ -405,6 +405,64 @@ type KafkaProducerWrapper struct {
 - It allows for easier testing and extension without tightly coupling the Kafka producer to application logic.
 
 
+#### `kafkaMessagesProcessed`
+```go
+var (
+    kafkaMessagesProcessed = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "kafka_messages_processed_total",
+            Help: "Total number of Kafka messages processed.",
+        },
+        []string{"result"},
+    )
+)
+```
+**Description**:
+- `kafkaMessagesProcessed` is a Prometheus CounterVec metric that tracks the total number of Kafka messages processed by the application.
+**Labels**:
+- `result` (type: `string`): Categorizes the outcome of message processing (e.g., `"success"`, `"failure"`).
+**Usage**:  
+- Increment the counter after processing a message, specifying the appropriate result label.
+- Register this metric with the Prometheus registry during application initialization.
+**Example**:
+```go
+kafkaMessagesProcessed.WithLabelValues("success").Inc()
+kafkaMessagesProcessed.WithLabelValues("failure").Inc()
+```
+**Purpose**:  
+- Provides visibility into the performance of Kafka message processing.  
+- Enables detailed analysis of message processing durations through histogram buckets.  
+- Helps identify bottlenecks and performance issues over time using Prometheus scrapers and dashboards.
+
+
+### `kafkaProcessingDuration`
+
+```go
+var kafkaProcessingDuration = prometheus.NewHistogramVec(
+    prometheus.HistogramOpts{
+        Name:    "kafka_processing_duration_seconds",
+        Help:    "Histogram of message processing durations in seconds.",
+        Buckets: prometheus.DefBuckets,
+    },
+    []string{"result"},
+)
+```
+**Description**:  
+-`kafkaProcessingDuration` is a Prometheus Histogram metric that tracks the time taken to process Kafka messages. It provides insights into the performance and duration of message processing.  
+**Labels**:
+- `result` (type: `string`): Categorizes the outcome of message processing (e.g., `"success"`, `"failure"`).
+**Usage**:  
+- Observe the time taken to process each Kafka message, specifying the appropriate result label.  
+- Register this metric with the Prometheus registry during application initialization.
+**Example**:
+```go
+  kafkaProcessingDuration.WithLabelValues("success").Observe(durationInSeconds)
+```
+**Purpose**:  
+- Provides visibility into the performance of Kafka message processing.  
+- Enables detailed analysis of message processing durations through histogram buckets.  
+- Helps identify bottlenecks and performance issues over time using Prometheus scrapers and dashboards.  
+
 
 #### Consumer Functions <a name="consumer_documentation_functions"></a>
 ---
